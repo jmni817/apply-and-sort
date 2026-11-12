@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from typing import Any, Callable
 
-from .company import ClaudeError, CompanyClassifier, CompanyInfo
+from .company import AIError, CompanyClassifier, CompanyInfo
 from .records import Application, header_index, normalize_company, parse_applications
 from .sheets_client import SheetsClient
 from .stats import summarize
@@ -21,12 +21,12 @@ CACHE_HEADER = ["회사", "기업규모", "업종", "근거", "확인일"]
 @dataclass
 class FillReport:
     filled: int = 0  # 기업규모를 채운 행 수
-    searched: int = 0  # Claude 로 새로 검색한 회사 수
+    searched: int = 0  # AI 로 새로 찾은 회사 수
     skipped: int = 0  # 시간 제한·오류로 못 채운 행 수
     errors: list[str] = field(default_factory=list)
 
     def message(self) -> str:
-        text = f"{self.filled}행을 채웠어요 (새로 검색한 회사 {self.searched}곳)."
+        text = f"{self.filled}행을 채웠어요 (AI가 새로 찾은 회사 {self.searched}곳)."
         if self.skipped:
             text += f" {self.skipped}행은 못 채웠어요."
         return text
@@ -79,7 +79,7 @@ class Tracker:
         progress: Callable[[str], None] = lambda message: None,
         clock: Callable[[], float] = time.monotonic,
     ) -> FillReport:
-        """기업규모가 빈 행을 채운다. 기업정보 시트에 있는 회사는 검색하지 않는다."""
+        """기업규모가 빈 행을 채운다. 기업정보 시트에 있는 회사는 AI 에게 묻지 않는다."""
         report = FillReport()
         size_col = self._size_column()
         apps = [a for a in self.load() if not a.size]
@@ -100,18 +100,18 @@ class Tracker:
                 if time_limit is not None and clock() - start > time_limit:
                     report.skipped += 1
                     continue
-                progress(f"{app.company} 검색 중...")
+                progress(f"{app.company} 확인 중...")
                 try:
                     info = classifier.classify(app.company, app.role)
-                except ClaudeError as exc:
-                    # 키·크레딧·네트워크 문제는 다음 회사에서도 똑같이 실패하므로 검색을 멈춘다
+                except AIError as exc:
+                    # 키·주소·네트워크 문제는 다음 회사에서도 똑같이 실패하므로 AI 호출을 멈춘다
                     report.errors.append(f"{app.company}: {exc}")
                     report.skipped += 1
                     classifier = None
                     continue
                 cache[key] = info
                 report.searched += 1
-                # 바로 저장해 두면 중간에 멈춰도 다음 실행에서 다시 검색하지 않는다
+                # 바로 저장해 두면 중간에 멈춰도 다음 실행에서 다시 묻지 않는다
                 self.sheets.append_rows(
                     self.config["cache_sheet"],
                     [[app.company, info.size, info.industry, info.reason, date.today().isoformat()]],

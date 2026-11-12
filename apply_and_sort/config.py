@@ -31,11 +31,12 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "document": "서류",
         "size": "기업규모",
     },
-    "claude": {
-        "model": "claude-opus-5-5",
-        "api_key_path": "claude_api_key.txt",
-        # 회사 하나를 분류할 때 허용하는 웹 검색 횟수
-        "max_searches": 3,
+    # OpenAI 호환(Chat Completions) API. 꺼 두면 기업정보 탭에 있는 회사만 채운다.
+    "llm": {
+        "enabled": False,
+        "base_url": "",  # 예: https://api.openai.com/v1, http://127.0.0.1:31415/v1 (freellmapi)
+        "model": "",  # 예: gpt-4o-mini, auto
+        "api_key_path": "llm_api_key.txt",
     },
 }
 

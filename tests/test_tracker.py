@@ -1,4 +1,4 @@
-from apply_and_sort.company import ClaudeError, CompanyInfo
+from apply_and_sort.company import AIError, CompanyInfo
 from apply_and_sort.tracker import CACHE_HEADER, Tracker
 
 from .conftest import FakeSheets
@@ -75,9 +75,9 @@ def test_fill_skips_rows_that_already_have_size(config):
     assert report.filled == 1
 
 
-def test_fill_stops_searching_after_claude_error(sample_values, config):
+def test_fill_stops_calling_ai_after_error(sample_values, config):
     tracker, _ = make_tracker(sample_values, config)
-    classifier = FakeClassifier(error=ClaudeError("Claude API 키가 올바르지 않습니다."))
+    classifier = FakeClassifier(error=AIError("AI API 키가 올바르지 않거나 권한이 없습니다."))
 
     report = tracker.fill_sizes(classifier)
 

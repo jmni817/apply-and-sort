@@ -21,7 +21,7 @@ from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 from . import __version__
-from .company import key_path, load_classifier, read_api_key
+from .company import AIError, CompanyClassifier, LLMSettings, key_path, load_classifier, read_api_key, validate_base_url
 from .config import ConfigError, default_config, extract_spreadsheet_id, load_config, resolve_path, save_config
 from .records import SheetFormatError
 from .sheets_client import AuthError, SheetsApiError, SheetsClient, load_credentials, save_private_file, validate_client_secrets
@@ -31,7 +31,9 @@ log = logging.getLogger(__name__)
 
 COOKIE_NAME = "aas_session"
 MAX_BODY = 64 * 1024
-CLASSIFY_TIME_LIMIT = 30 * 60  # 한 번 누를 때 최대 30분까지 검색
+CLASSIFY_TIME_LIMIT = 30 * 60  # 한 번 누를 때 최대 30분까지 AI 호출
+# [연결 테스트] 에서 물어볼 예시 (누구나 아는 회사라 결과를 바로 확인할 수 있음)
+LLM_TEST_COMPANY, LLM_TEST_ROLE = "네이버", "서비스 기획"
 
 
 class _LinkCaptureBrowser(webbrowser.BaseBrowser):
@@ -85,8 +87,18 @@ class DashboardState:
             "connected": self.token_path(config).exists(),
             "spreadsheet_url": config.get("spreadsheet_url", ""),
             "data_sheet": config.get("data_sheet", ""),
-            "claude_key": bool(read_api_key(config, self.config_path)),
+            "llm": self.llm_status(config),
             "oauth": dict(self.oauth),
+        }
+
+    def llm_status(self, config: dict[str, Any] | None = None) -> dict[str, Any]:
+        config = config or self.config()
+        cfg = config.get("llm") or {}
+        return {
+            "enabled": bool(cfg.get("enabled")),
+            "base_url": cfg.get("base_url") or "",
+            "model": cfg.get("model") or "",
+            "has_key": bool(read_api_key(config, self.config_path)),  # 키 자체는 절대 내보내지 않음
         }
 
     def save_credentials(self, text: str) -> None:
@@ -109,18 +121,43 @@ class DashboardState:
             config["data_sheet"] = sheet
         self._save(config)
 
-    def save_claude_key(self, key: str) -> None:
+    def save_llm(self, payload: dict[str, Any]) -> None:
+        """AI 연결 저장. 새 키를 입력했을 때만 키 파일을 바꾸고, 비워 두면 기존 키를 그대로 쓴다."""
+        enabled = bool(payload.get("enabled"))
+        base_url = str(payload.get("base_url") or "").strip()
+        model = str(payload.get("model") or "").strip()
+        new_key = str(payload.get("api_key") or "").strip()
+        if base_url:
+            base_url = validate_base_url(base_url)
+        if len(model) > 200 or any(ch in model for ch in "\r\n"):
+            raise ValueError("모델 이름을 확인해 주세요.")
+        if any(ch in new_key for ch in "\r\n "):
+            raise ValueError("API 키에 공백이나 줄바꿈이 들어 있습니다.")
+
         config = self.config()
-        path = key_path(config, self.config_path)
-        key = key.strip()
-        if not key:
-            path.unlink(missing_ok=True)
-            return
-        if not key.startswith("sk-ant-"):
-            raise ValueError("Claude API 키는 sk-ant- 로 시작해요. console.anthropic.com 에서 만든 키를 넣어 주세요.")
-        save_private_file(path, key)
-        if not self.config_path.exists():
-            self._save(config)
+        config["llm"].update({"enabled": enabled, "base_url": base_url, "model": model})
+        if new_key:
+            save_private_file(key_path(config, self.config_path), new_key)
+        if enabled and not (base_url and model and read_api_key(config, self.config_path)):
+            raise ValueError("AI로 채우기를 켜려면 API 주소, 모델 이름, API 키가 모두 필요합니다.")
+        self._save(config)
+
+    def test_llm(self) -> str:
+        """저장된 설정으로 잘 알려진 회사 하나를 물어본다 (시트는 건드리지 않음)."""
+        config = self.config()
+        cfg = config.get("llm") or {}
+        api_key = read_api_key(config, self.config_path)
+        if not (cfg.get("base_url") and cfg.get("model") and api_key):
+            raise ValueError("API 주소, 모델 이름, API 키를 먼저 저장해 주세요.")
+        classifier = CompanyClassifier(
+            LLMSettings(base_url=cfg["base_url"], model=cfg["model"], api_key=api_key, timeout_seconds=20),
+            max_retries=0,
+        )
+        try:
+            info = classifier.classify(LLM_TEST_COMPANY, LLM_TEST_ROLE)
+        except AIError as exc:
+            raise ValueError(str(exc)) from exc
+        return f"연결 성공! 예시로 '{LLM_TEST_COMPANY}'를 물어본 결과: {info.size}" + (f" — {info.reason}" if info.reason else "")
 
     # ---- 구글 로그인
 
@@ -188,7 +225,7 @@ class DashboardState:
             report = self.tracker().fill_sizes(classifier, time_limit=CLASSIFY_TIME_LIMIT, progress=progress)
             result = report.message()
             if classifier is None and report.skipped:
-                result += " Claude API 키를 등록하면 처음 보는 회사도 자동으로 검색해요."
+                result += " 4단계에서 AI를 연결하면 처음 보는 회사도 AI가 찾아 채워요."
             self.job.update(result=result, errors=report.errors)
         except (ConfigError, AuthError, SheetsApiError, SheetFormatError) as exc:
             self.job.update(result="", errors=[str(exc)])
@@ -286,8 +323,10 @@ def _make_handler(state: DashboardState, access_token: str, allowed_hosts: set[s
                     state.save_credentials(str(payload.get("text") or ""))
                 elif path == "/api/settings":
                     state.save_settings(payload)
-                elif path == "/api/claude-key":
-                    state.save_claude_key(str(payload.get("key") or ""))
+                elif path == "/api/llm":
+                    state.save_llm(payload)
+                elif path == "/api/llm/test":
+                    return self._json(HTTPStatus.OK, {"ok": True, "output": state.test_llm()})
                 elif path == "/api/connect":
                     state.start_oauth()
                 elif path == "/api/disconnect":

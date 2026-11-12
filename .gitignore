@@ -2,7 +2,7 @@
 credentials.json
 token.json
 config.yaml
-claude_api_key.txt
+llm_api_key.txt
 client_secret*.json
 *.token.json
 .env

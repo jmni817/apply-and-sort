@@ -47,6 +47,10 @@
   .chip { font-size: 12px; padding: 2px 8px; border-radius: 99px; background: var(--line); color: var(--muted); }
   .chip.ok { background: var(--accent-soft); color: var(--accent); }
   .msg { font-size: 13px; margin-top: 6px; min-height: 1em; }
+  .field { margin-top: 8px; }
+  .field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 3px; }
+  .check { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-weight: 600; cursor: pointer; }
+  code { font: 12px ui-monospace, Consolas, monospace; background: var(--line); padding: 1px 5px; border-radius: 5px; }
   .msg.err { color: var(--bad); }
   .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
   .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
@@ -124,17 +128,31 @@
           <div class="msg" id="msg-sheet"></div>
         </div>
       </div>
-      <div class="step" id="step-claude">
+      <div class="step" id="step-llm">
         <div class="num">4</div>
         <div>
-          <b>Claude API 키</b> <span class="muted">(선택)</span> <span class="chip" id="chip-claude">미등록</span>
-          <div class="muted">등록하면 처음 보는 회사의 기업규모를 Claude 가 웹 검색으로 찾아 채워요. 키는 이 PC 에만 저장돼요.</div>
-          <div class="row">
-            <input type="password" id="claude-key" placeholder="sk-ant-..." autocomplete="off">
-            <button class="primary" id="save-key">저장</button>
-            <button id="delete-key">삭제</button>
+          <b>AI 연결</b> <span class="muted">(선택)</span> <span class="chip" id="chip-llm">꺼짐</span>
+          <div class="muted">켜 두면 처음 보는 회사의 기업규모를 AI가 찾아 채워요. OpenAI 호환(Chat Completions) 형식이면 어디든 연결돼요.
+            (예: <code>https://api.openai.com/v1</code>, 통합 키 서비스 freellmapi, 내 PC의 로컬 모델)</div>
+          <label class="check"><input type="checkbox" id="llm-on"> AI로 채우기 사용하기</label>
+          <div class="field">
+            <label for="llm-url">API 주소 (OpenAI 호환)</label>
+            <input type="text" id="llm-url" placeholder="예: https://api.openai.com/v1" autocomplete="off" spellcheck="false">
           </div>
-          <div class="msg" id="msg-claude"></div>
+          <div class="field">
+            <label for="llm-model">모델 이름</label>
+            <input type="text" id="llm-model" placeholder="예: gpt-4o-mini" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="field">
+            <label for="llm-key">API 키 <span class="muted" id="llm-key-hint"></span></label>
+            <input type="password" id="llm-key" placeholder="본인 API 키" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="row">
+            <button class="primary" id="save-llm">저장하기</button>
+            <button id="test-llm" type="button">연결 테스트</button>
+          </div>
+          <div class="muted">AI에게는 회사명과 지원 직무만 보내요. 입력한 AI 서비스의 데이터 보관·학습 정책을 꼭 확인하세요.</div>
+          <div class="msg" id="msg-llm"></div>
         </div>
       </div>
     </div>
@@ -168,6 +186,7 @@
 <script>
 const $ = (id) => document.getElementById(id);
 let status = null;
+let llmLoaded = false;
 
 async function api(path, body) {
   const opts = body === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
@@ -197,11 +216,19 @@ function renderStatus(s) {
   chip("chip-cred", s.credentials, "등록됨", "미등록");
   chip("chip-conn", s.connected, "연결됨", s.oauth.running ? "로그인 대기 중..." : "연결 안 됨");
   chip("chip-sheet", !!s.spreadsheet_url, "저장됨", "미설정");
-  chip("chip-claude", s.claude_key, "등록됨", "미등록");
+  const llm = s.llm || {};
+  chip("chip-llm", llm.enabled, "켜짐", "꺼짐");
+  $("llm-key-hint").textContent = llm.has_key ? "(저장된 키 있음 — 바꿀 때만 입력)" : "";
+  if (!llmLoaded) {  // 입력 중인 값을 상태 갱신이 덮어쓰지 않도록 처음 한 번만 채운다
+    llmLoaded = true;
+    $("llm-on").checked = !!llm.enabled;
+    $("llm-url").value = llm.base_url || "";
+    $("llm-model").value = llm.model || "";
+  }
   $("step-cred").classList.toggle("done", s.credentials);
   $("step-conn").classList.toggle("done", s.connected);
   $("step-sheet").classList.toggle("done", !!s.spreadsheet_url);
-  $("step-claude").classList.toggle("done", s.claude_key);
+  $("step-llm").classList.toggle("done", !!llm.enabled);
   $("connect").disabled = !s.credentials || s.oauth.running;
   $("login-link").hidden = !s.oauth.auth_url;
   if (s.oauth.auth_url) {
@@ -236,7 +263,7 @@ function renderSummary(d) {
 
   $("notice").hidden = !d.unclassified;
   $("notice-text").textContent = `기업규모가 비어 있는 행이 ${d.unclassified}개 있어요.` +
-    (status && status.claude_key ? "" : " Claude API 키를 등록하면 처음 보는 회사도 자동으로 찾아요.");
+    (status && status.llm && status.llm.enabled ? "" : " [설정] 4단계에서 AI를 연결하면 처음 보는 회사도 AI가 찾아 채워요.");
 
   const box = $("groups");
   box.replaceChildren();
@@ -339,18 +366,23 @@ $("save-sheet").addEventListener("click", async () => {
   } catch (e) { say("msg-sheet", e.message, true); }
 });
 
-$("save-key").addEventListener("click", async () => {
+$("save-llm").addEventListener("click", async () => {
   try {
-    const r = await api("/api/claude-key", { key: $("claude-key").value });
-    $("claude-key").value = "";
+    const r = await api("/api/llm", {
+      enabled: $("llm-on").checked, base_url: $("llm-url").value, model: $("llm-model").value, api_key: $("llm-key").value,
+    });
+    $("llm-key").value = "";  // 저장한 키는 다시 표시하지 않음
     renderStatus(r.status);
-    say("msg-claude", "저장했어요.");
-  } catch (e) { say("msg-claude", e.message, true); }
+    say("msg-llm", "저장했어요. [연결 테스트]로 확인해 보세요.");
+  } catch (e) { say("msg-llm", e.message, true); }
 });
 
-$("delete-key").addEventListener("click", async () => {
-  renderStatus((await api("/api/claude-key", { key: "" })).status);
-  say("msg-claude", "삭제했어요.");
+$("test-llm").addEventListener("click", async () => {
+  $("test-llm").disabled = true;
+  say("msg-llm", "예시 회사로 AI에게 물어보는 중...");
+  try { say("msg-llm", (await api("/api/llm/test", {})).output); }
+  catch (e) { say("msg-llm", e.message, true); }
+  finally { $("test-llm").disabled = false; }
 });
 
 $("classify").addEventListener("click", async () => {

@@ -39,7 +39,7 @@ DEFAULT_CONFIG_PATH = default_config_path()
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="apply-and-sort",
-        description="구글 시트 취준 기록을 Claude로 정리하고 서류 합격률을 보여주는 대시보드",
+        description="구글 시트 취준 기록을 AI로 정리하고 서류 합격률을 보여주는 대시보드",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument("-v", "--verbose", action="store_true", help="디버그 로그 출력")
@@ -58,8 +58,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("summary", parents=[common], help="서류 합격률 요약을 터미널에 출력")
 
-    classify = sub.add_parser("classify", parents=[common], help="비어 있는 기업규모 칸을 Claude로 채우기")
-    classify.add_argument("--time-limit", type=float, default=None, help="검색에 쓸 최대 시간(초)")
+    classify = sub.add_parser("classify", parents=[common], help="비어 있는 기업규모 칸을 AI로 채우기")
+    classify.add_argument("--time-limit", type=float, default=None, help="AI 호출에 쓸 최대 시간(초)")
     return parser
 
 
@@ -114,7 +114,7 @@ def _cmd_classify(args) -> int:
     tracker, config = _tracker(args.config, interactive=not os.environ.get("CI"))
     classifier = load_classifier(config, args.config)
     if classifier is None:
-        print("참고: Claude API 키가 없어 기업정보 시트에 있는 회사만 채웁니다.", file=sys.stderr)
+        print("참고: AI 연결(API 주소·모델)이 설정되지 않아 기업정보 탭에 있는 회사만 채웁니다.", file=sys.stderr)
     report = tracker.fill_sizes(classifier, time_limit=args.time_limit, progress=print)
     print(report.message())
     for error in report.errors:

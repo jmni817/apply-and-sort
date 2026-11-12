@@ -1,72 +1,122 @@
-from types import SimpleNamespace
+import io
+import json
+import urllib.error
 
-from apply_and_sort.company import CompanyClassifier, parse_info
+import pytest
 
-
-def text_block(text):
-    return SimpleNamespace(type="text", text=text)
-
-
-def response(stop_reason, *blocks):
-    return SimpleNamespace(stop_reason=stop_reason, content=list(blocks))
-
-
-class FakeMessages:
-    def __init__(self, responses):
-        self.responses = list(responses)
-        self.calls = []
-
-    def create(self, **kwargs):
-        self.calls.append(kwargs)
-        return self.responses.pop(0)
+from apply_and_sort.company import (
+    AIError,
+    CompanyClassifier,
+    LLMSettings,
+    load_classifier,
+    parse_info,
+    validate_base_url,
+)
+from apply_and_sort.config import default_config
 
 
-def fake_client(*responses):
-    messages = FakeMessages(responses)
-    return SimpleNamespace(beta=SimpleNamespace(messages=messages)), messages
+class FakeResponse(io.BytesIO):
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
 
 
-def test_parse_info_takes_last_json_line():
-    text = '검색해 보니... {"size": "중소기업"} 이라고도 나오지만\n{"size": "중견기업", "industry": "교육", "reason": "사람인 기업형태"}'
+def chat_response(content):
+    return FakeResponse(json.dumps({"choices": [{"message": {"content": content}}]}).encode("utf-8"))
+
+
+class FakeOpener:
+    def __init__(self, *results):
+        self.results = list(results)
+        self.requests = []
+
+    def __call__(self, request, timeout=None):
+        self.requests.append(request)
+        result = self.results.pop(0)
+        if isinstance(result, Exception):
+            raise result
+        return result
+
+
+def http_error(code):
+    return urllib.error.HTTPError("https://x", code, "error", {}, io.BytesIO(b""))
+
+
+def classifier(opener, **settings):
+    base = {"base_url": "https://api.example.com/v1/", "model": "test-model", "api_key": "secret"}
+    return CompanyClassifier(LLMSettings(**{**base, **settings}), opener=opener, sleep=lambda s: None)
+
+
+def test_parse_info_takes_last_json_object():
+    text = '{"size": "중소기업"} 이라고 생각했지만\n{"size": "중견기업", "industry": "교육", "reason": "중견기업 확인서"}'
 
     info = parse_info(text)
 
-    assert (info.size, info.industry, info.reason) == ("중견기업", "교육", "사람인 기업형태")
+    assert (info.size, info.industry, info.reason) == ("중견기업", "교육", "중견기업 확인서")
 
 
 def test_parse_info_unknown_when_missing_or_invalid():
-    assert parse_info("결과를 찾지 못했어요").size == "알수없음"
+    assert parse_info("잘 모르겠어요").size == "알수없음"
     assert parse_info('{"size": "스타트업"}').size == "알수없음"
     assert parse_info('{"size": 중견기업}').size == "알수없음"
 
 
-def test_classify_sends_company_and_role_with_web_search():
-    client, messages = fake_client(response("end_turn", text_block('{"size": "대기업", "industry": "IT"}')))
+def test_classify_sends_openai_compatible_request():
+    opener = FakeOpener(chat_response('{"size": "대기업", "industry": "IT"}'))
 
-    info = CompanyClassifier(client, model="claude-opus-5-5", max_searches=2).classify("가나다랩", "콘텐츠 마케터")
+    info = classifier(opener).classify("가나다랩", "콘텐츠 마케터")
 
     assert info.size == "대기업"
-    call = messages.calls[0]
-    assert call["model"] == "claude-opus-5-5"
-    assert call["tools"][0]["type"] == "web_search_20260209"
-    assert call["tools"][0]["max_uses"] == 2
-    assert call["fallbacks"] == "default"
-    prompt = call["messages"][0]["content"]
-    assert "가나다랩" in prompt and "콘텐츠 마케터" in prompt
+    request = opener.requests[0]
+    assert request.full_url == "https://api.example.com/v1/chat/completions"
+    assert request.get_header("Authorization") == "Bearer secret"
+    body = json.loads(request.data)
+    assert body["model"] == "test-model"
+    assert "가나다랩" in body["messages"][1]["content"] and "콘텐츠 마케터" in body["messages"][1]["content"]
+    assert "합격" not in body["messages"][1]["content"]  # 회사명·직무 외 정보는 보내지 않음
 
 
-def test_classify_continues_after_pause_turn():
-    paused = response("pause_turn", text_block("검색 중"))
-    client, messages = fake_client(paused, response("end_turn", text_block('{"size": "중소기업"}')))
+def test_classify_retries_rate_limit_then_succeeds():
+    opener = FakeOpener(http_error(429), chat_response('{"size": "중소기업"}'))
 
-    info = CompanyClassifier(client).classify("가나다랩")
-
-    assert info.size == "중소기업"
-    assert len(messages.calls) == 2
-    assert messages.calls[1]["messages"][-1] == {"role": "assistant", "content": paused.content}
+    assert classifier(opener).classify("가나다랩").size == "중소기업"
+    assert len(opener.requests) == 2
 
 
-def test_classify_refusal_is_unknown():
-    client, _ = fake_client(response("refusal"))
+@pytest.mark.parametrize("code, text", [(401, "API 키"), (404, "모델 이름")])
+def test_classify_explains_http_errors(code, text):
+    with pytest.raises(AIError, match=text):
+        classifier(FakeOpener(http_error(code))).classify("가나다랩")
 
-    assert CompanyClassifier(client).classify("가나다랩").size == "알수없음"
+
+def test_classify_hints_local_gateway_when_unreachable():
+    opener = FakeOpener(*[urllib.error.URLError("refused")] * 3)
+
+    with pytest.raises(AIError, match="게이트웨이"):
+        classifier(opener, base_url="http://127.0.0.1:31415/v1").classify("가나다랩")
+
+
+def test_classify_rejects_non_openai_response():
+    with pytest.raises(AIError, match="OpenAI 호환"):
+        classifier(FakeOpener(FakeResponse(b'{"result": "ok"}'))).classify("가나다랩")
+
+
+def test_validate_base_url_allows_https_and_localhost_only():
+    assert validate_base_url("https://api.openai.com/v1/chat/completions") == "https://api.openai.com/v1"
+    assert validate_base_url("http://127.0.0.1:31415/v1") == "http://127.0.0.1:31415/v1"
+    with pytest.raises(ValueError):
+        validate_base_url("http://example.com/v1")
+
+
+def test_load_classifier_needs_enabled_url_model_and_key(tmp_path):
+    config_path = tmp_path / "config.yaml"
+    config = default_config()
+    config["llm"].update({"base_url": "http://127.0.0.1:31415/v1", "model": "auto"})
+
+    assert load_classifier(config, config_path) is None  # 꺼져 있음
+    config["llm"]["enabled"] = True
+    assert load_classifier(config, config_path) is None  # 키 없음
+    (tmp_path / "llm_api_key.txt").write_text("secret", encoding="utf-8")
+    assert load_classifier(config, config_path) is not None
