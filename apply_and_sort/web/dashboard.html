@@ -21,6 +21,7 @@
     }
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }  /* .notice 등 display 를 지정한 요소도 hidden 이면 숨긴다 */
   body { margin: 0; background: var(--bg); color: var(--text);
          font: 15px/1.55 "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif; }
   .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 16px 64px; }
@@ -65,6 +66,7 @@
   .notice span { flex: 1 1 260px; }
   .log { font: 12px/1.5 ui-monospace, Consolas, monospace; color: var(--muted); max-height: 120px; overflow: auto;
          white-space: pre-wrap; margin-top: 8px; }
+  .section-title { font-size: 19px; margin: 24px 0 12px; }
   .groups { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
   .grow { display: grid; grid-template-columns: minmax(80px, 34%) 1fr 92px; gap: 10px; align-items: center;
           padding: 7px 0; border-top: 1px solid var(--line); }
@@ -183,6 +185,7 @@
       <div class="msg" id="job-result"></div>
       <div class="log" id="job-log"></div>
     </div>
+    <h2 class="section-title">💡 내 서류합격률 분석</h2>
     <div class="groups" id="groups"></div>
   </main>
   <div class="msg err" id="msg-dash"></div>
