@@ -13,6 +13,7 @@ from apply_and_sort.company import (
     validate_base_url,
 )
 from apply_and_sort.config import default_config
+from apply_and_sort.saramin import SaraminCompany
 
 
 class FakeResponse(io.BytesIO):
@@ -76,6 +77,59 @@ def test_classify_sends_openai_compatible_request():
     assert body["model"] == "test-model"
     assert "가나다랩" in body["messages"][1]["content"] and "콘텐츠 마케터" in body["messages"][1]["content"]
     assert "합격" not in body["messages"][1]["content"]  # 회사명·직무 외 정보는 보내지 않음
+
+
+class FakeLookup:
+    def __init__(self, *candidates):
+        self.candidates = list(candidates)
+        self.queries = []
+
+    def search(self, company):
+        self.queries.append(company)
+        return self.candidates
+
+
+def test_classify_uses_saramin_exact_match_without_ai():
+    opener = FakeOpener()  # 호출되면 pop 에서 실패
+    lookup = FakeLookup(SaraminCompany("(주)발렌라이프", "중소기업", "광고 대행업"))
+    clf = CompanyClassifier(LLMSettings("https://api.example.com/v1", "m", "k"), opener=opener, lookup=lookup)
+
+    info = clf.classify("발렌라이프", "마케팅")
+
+    assert (info.size, info.industry) == ("중소기업", "광고 대행업")
+    assert "사람인" in info.reason
+    assert opener.requests == []
+
+
+def test_classify_sends_saramin_candidates_to_ai_when_ambiguous():
+    opener = FakeOpener(chat_response('{"size": "대기업", "reason": "사람인의 스노우(주)"}'))
+    lookup = FakeLookup(SaraminCompany("스노우(주)", "대기업", "응용 소프트웨어"), SaraminCompany("스노우베이", "중소기업", "전자상거래"))
+    clf = CompanyClassifier(LLMSettings("https://api.example.com/v1", "m", "k"), opener=opener, lookup=lookup)
+
+    info = clf.classify("snow", "카메라 콘텐츠 AI")
+
+    assert info.size == "대기업"
+    user = json.loads(opener.requests[0].data)["messages"][1]["content"]
+    assert "사람인 기업정보 조회 결과" in user
+    assert "스노우(주) | 기업형태: 대기업" in user and "스노우베이" in user
+
+
+def test_classify_tells_ai_when_saramin_found_nothing():
+    opener = FakeOpener(chat_response('{"size": "알수없음"}'))
+    clf = CompanyClassifier(LLMSettings("https://api.example.com/v1", "m", "k"), opener=opener, lookup=FakeLookup())
+
+    clf.classify("없는회사")
+
+    assert "찾지 못함" in json.loads(opener.requests[0].data)["messages"][1]["content"]
+
+
+def test_classify_asks_ai_when_saramin_type_is_other():
+    opener = FakeOpener(chat_response('{"size": "중견기업"}'))
+    lookup = FakeLookup(SaraminCompany("(주)야나두", "기타", "응용 소프트웨어"))
+    clf = CompanyClassifier(LLMSettings("https://api.example.com/v1", "m", "k"), opener=opener, lookup=lookup)
+
+    assert clf.classify("야나두").size == "중견기업"
+    assert len(opener.requests) == 1
 
 
 def test_classify_retries_rate_limit_then_succeeds():

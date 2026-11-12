@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "apply-and-sort"
-version = "0.1.5"
+version = "0.1.6"
 description = "구글 시트 취준 기록을 AI로 정리하고 서류 합격률을 보여주는 대시보드"
 readme = "README.md"
 license = { text = "MIT" }
