@@ -160,6 +160,8 @@ def execute_with_retry(
         except HttpError as exc:
             status = getattr(exc.resp, "status", None)
             if status not in RETRYABLE_STATUS or attempt == max_retries:
+                if status == 400 and "Unable to parse range" in str(exc):
+                    raise SheetsApiError("시트(탭) 이름을 찾지 못했습니다. 3단계의 탭 이름을 확인해 주세요.", status) from exc
                 if status == 404:
                     raise SheetsApiError("시트를 찾지 못했습니다. 주소와 시트(탭) 이름을 확인해 주세요.", status) from exc
                 if status == 403 and _api_disabled(exc):

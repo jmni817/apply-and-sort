@@ -97,6 +97,18 @@ def test_fill_respects_time_limit(sample_values, config):
     assert report.filled == 2 and report.skipped == 2
 
 
+def test_wrong_tab_name_lists_real_tabs(sample_values, config):
+    import pytest
+
+    from apply_and_sort.records import SheetFormatError
+
+    config["data_sheet"] = "취준기록"  # 시트 제목을 탭 이름으로 잘못 넣은 경우
+    tracker, _ = make_tracker(sample_values, config)
+
+    with pytest.raises(SheetFormatError, match="'취준기록' 탭이 없어요.*지원현황"):
+        tracker.summary()
+
+
 def test_summary_reads_data_sheet(sample_values, config):
     tracker, _ = make_tracker(sample_values, config)
 

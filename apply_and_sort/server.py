@@ -122,6 +122,11 @@ class DashboardState:
         sheet = str(payload.get("data_sheet") or "").strip()
         if sheet:
             config["data_sheet"] = sheet
+        if self.token_path(config).exists():  # 구글 계정이 연결돼 있으면 저장 전에 탭이 정말 있는지 확인
+            sheets = SheetsClient.from_files(
+                self.credentials_path(config), self.token_path(config), extract_spreadsheet_id(url), interactive=False
+            )
+            Tracker(sheets, config).check_data_sheet()
         self._save(config)
 
     def save_llm(self, payload: dict[str, Any]) -> None:
@@ -356,7 +361,7 @@ def _make_handler(state: DashboardState, access_token: str, allowed_hosts: set[s
                     return
                 else:
                     return self._json(HTTPStatus.NOT_FOUND, {"error": "not found"})
-            except (ValueError, ConfigError, AuthError) as exc:
+            except (ValueError, ConfigError, AuthError, SheetsApiError, SheetFormatError) as exc:
                 return self._json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
             return self._json(HTTPStatus.OK, {"ok": True, "status": state.status()})
 

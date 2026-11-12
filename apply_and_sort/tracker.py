@@ -9,7 +9,7 @@ from datetime import date
 from typing import Any, Callable
 
 from .company import AIError, CompanyClassifier, CompanyInfo
-from .records import Application, header_index, normalize_company, parse_applications
+from .records import Application, SheetFormatError, header_index, normalize_company, parse_applications
 from .sheets_client import SheetsClient
 from .stats import summarize
 
@@ -40,7 +40,18 @@ class Tracker:
 
     # ---- 읽기
 
+    def check_data_sheet(self) -> None:
+        """데이터 탭이 실제로 있는지 확인. 시트 제목을 탭 이름으로 잘못 넣는 경우가 많아 탭 목록을 알려 준다."""
+        name = self.config["data_sheet"]
+        names = self.sheets.sheet_names()
+        if name not in names:
+            raise SheetFormatError(
+                f"'{name}' 탭이 없어요. 시트 제목이 아니라 아래쪽 탭 이름을 넣어 주세요. "
+                f"(이 시트에 있는 탭: {', '.join(names)})"
+            )
+
     def load(self) -> list[Application]:
+        self.check_data_sheet()
         return parse_applications(self.sheets.read_values(self.config["data_sheet"]), self.columns)
 
     def summary(self) -> dict:
