@@ -1,0 +1,18 @@
+# ---- 개인 정보 / 비밀 값: 절대 커밋 금지 ----
+credentials.json
+token.json
+config.yaml
+claude_api_key.txt
+client_secret*.json
+*.token.json
+.env
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+build/
+dist/

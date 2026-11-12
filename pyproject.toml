@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "apply-and-sort"
+version = "0.1.0"
+description = "구글 시트 취준 기록을 Claude로 정리하고 서류 합격률을 보여주는 대시보드"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic>=1.0",
+    "google-api-python-client>=2.100",
+    "google-auth-httplib2>=0.2",
+    "google-auth-oauthlib>=1.2",
+    "PyYAML>=6.0",
+]
+keywords = ["job-search", "google-sheets", "claude", "dashboard", "취업"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: Korean",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+desktop = ["pywebview>=5.0"]  # 브라우저 대신 프로그램 창으로 열기 (없으면 브라우저로 열림)
+
+[project.scripts]
+apply-and-sort = "apply_and_sort.main:main"
+
+[tool.setuptools]
+packages = ["apply_and_sort"]
+
+[tool.setuptools.package-data]
+apply_and_sort = ["web/*.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
