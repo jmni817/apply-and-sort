@@ -26,9 +26,8 @@ columns:
   document: 서류
   size: 기업규모
 
-# (선택) AI로 기업규모 채우기. OpenAI 호환(Chat Completions) API 면 어디든 됩니다.
+# AI로 기업규모 채우기 (필수). OpenAI 호환(Chat Completions) API 면 어디든 됩니다.
 llm:
-  enabled: false
   base_url: ""        # 예: https://api.openai.com/v1, http://127.0.0.1:31415/v1 (freellmapi)
   model: ""           # 예: gpt-4o-mini, auto (freellmapi)
   # API 키는 이 파일에 직접 쓰지 말고 별도 파일에 저장해요. (대시보드에서 등록하면 자동)

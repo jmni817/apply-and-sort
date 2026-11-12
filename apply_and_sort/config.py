@@ -31,9 +31,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "document": "서류",
         "size": "기업규모",
     },
-    # OpenAI 호환(Chat Completions) API. 꺼 두면 기업정보 탭에 있는 회사만 채운다.
+    # OpenAI 호환(Chat Completions) API. 처음 설정에서 꼭 연결해야 한다.
     "llm": {
-        "enabled": False,
         "base_url": "",  # 예: https://api.openai.com/v1, http://127.0.0.1:31415/v1 (freellmapi)
         "model": "",  # 예: gpt-4o-mini, auto
         "api_key_path": "llm_api_key.txt",

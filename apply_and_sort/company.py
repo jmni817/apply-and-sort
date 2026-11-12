@@ -177,14 +177,11 @@ def read_api_key(config: dict[str, Any], config_path: str | Path) -> str:
 
 
 def load_classifier(config: dict[str, Any], config_path: str | Path) -> CompanyClassifier | None:
-    """AI 로 채우기가 켜져 있고 주소·모델·키가 모두 있으면 분류기를, 아니면 None."""
+    """API 주소·모델·키가 모두 있으면 분류기를, 아니면 None."""
     cfg = config.get("llm") or {}
-    if not cfg.get("enabled"):
-        return None
     base_url, model = str(cfg.get("base_url") or "").strip(), str(cfg.get("model") or "").strip()
     api_key = read_api_key(config, config_path)
     if not (base_url and model and api_key):
-        log.warning("AI로 채우기가 켜져 있지만 API 주소·모델·키 중 비어 있는 값이 있어 사용하지 않습니다.")
         return None
     try:
         base_url = validate_base_url(base_url)

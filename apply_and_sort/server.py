@@ -94,12 +94,13 @@ class DashboardState:
     def llm_status(self, config: dict[str, Any] | None = None) -> dict[str, Any]:
         config = config or self.config()
         cfg = config.get("llm") or {}
-        return {
-            "enabled": bool(cfg.get("enabled")),
+        status = {
             "base_url": cfg.get("base_url") or "",
             "model": cfg.get("model") or "",
             "has_key": bool(read_api_key(config, self.config_path)),  # 키 자체는 절대 내보내지 않음
         }
+        status["ready"] = bool(status["base_url"] and status["model"] and status["has_key"])
+        return status
 
     def save_credentials(self, text: str) -> None:
         try:
@@ -122,24 +123,27 @@ class DashboardState:
         self._save(config)
 
     def save_llm(self, payload: dict[str, Any]) -> None:
-        """AI 연결 저장. 새 키를 입력했을 때만 키 파일을 바꾸고, 비워 두면 기존 키를 그대로 쓴다."""
-        enabled = bool(payload.get("enabled"))
+        """AI 연결 저장 (필수). 새 키를 입력했을 때만 키 파일을 바꾸고, 비워 두면 기존 키를 그대로 쓴다."""
         base_url = str(payload.get("base_url") or "").strip()
         model = str(payload.get("model") or "").strip()
         new_key = str(payload.get("api_key") or "").strip()
-        if base_url:
-            base_url = validate_base_url(base_url)
+        if not base_url:
+            raise ValueError("API 주소를 입력해 주세요.")
+        base_url = validate_base_url(base_url)
+        if not model:
+            raise ValueError("모델 이름을 입력해 주세요.")
         if len(model) > 200 or any(ch in model for ch in "\r\n"):
             raise ValueError("모델 이름을 확인해 주세요.")
         if any(ch in new_key for ch in "\r\n "):
             raise ValueError("API 키에 공백이나 줄바꿈이 들어 있습니다.")
 
         config = self.config()
-        config["llm"].update({"enabled": enabled, "base_url": base_url, "model": model})
+        if not (new_key or read_api_key(config, self.config_path)):
+            raise ValueError("API 키를 입력해 주세요.")
+        config["llm"].update({"base_url": base_url, "model": model})
+        config["llm"].pop("enabled", None)  # 0.1.1 설정 파일에 남아 있을 수 있는 옛 항목
         if new_key:
             save_private_file(key_path(config, self.config_path), new_key)
-        if enabled and not (base_url and model and read_api_key(config, self.config_path)):
-            raise ValueError("AI로 채우기를 켜려면 API 주소, 모델 이름, API 키가 모두 필요합니다.")
         self._save(config)
 
     def test_llm(self) -> str:
@@ -222,11 +226,10 @@ class DashboardState:
         try:
             config = self.config()
             classifier = load_classifier(config, self.config_path)
+            if classifier is None:
+                raise ConfigError("AI 연결이 설정되지 않았어요. [설정] 4단계에서 API 주소·모델·키를 저장해 주세요.")
             report = self.tracker().fill_sizes(classifier, time_limit=CLASSIFY_TIME_LIMIT, progress=progress)
-            result = report.message()
-            if classifier is None and report.skipped:
-                result += " 4단계에서 AI를 연결하면 처음 보는 회사도 AI가 찾아 채워요."
-            self.job.update(result=result, errors=report.errors)
+            self.job.update(result=report.message(), errors=report.errors)
         except (ConfigError, AuthError, SheetsApiError, SheetFormatError) as exc:
             self.job.update(result="", errors=[str(exc)])
         except Exception as exc:

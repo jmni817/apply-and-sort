@@ -29,7 +29,7 @@ def test_config_roundtrip_keeps_defaults(tmp_path):
 
     assert config["columns"]["company"] == "기업명"
     assert config["columns"]["document"] == "서류"
-    assert config["llm"]["enabled"] is False
+    assert config["llm"]["api_key_path"] == "llm_api_key.txt"
 
 
 def test_load_config_missing_file(tmp_path):
@@ -54,12 +54,12 @@ def test_state_saves_settings_and_keys(tmp_path):
 
     state.save_credentials(json.dumps(CLIENT))
     state.save_settings({"spreadsheet_url": f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/edit", "data_sheet": "시트1"})
-    state.save_llm({"enabled": True, "base_url": "http://127.0.0.1:31415/v1", "model": "auto", "api_key": "test-key"})
+    state.save_llm({"base_url": "http://127.0.0.1:31415/v1", "model": "auto", "api_key": "test-key"})
     status = state.status()
 
     assert status["credentials"] and not status["connected"]
     assert status["data_sheet"] == "시트1"
-    assert status["llm"] == {"enabled": True, "base_url": "http://127.0.0.1:31415/v1", "model": "auto", "has_key": True}
+    assert status["llm"] == {"base_url": "http://127.0.0.1:31415/v1", "model": "auto", "has_key": True, "ready": True}
     assert "test-key" not in json.dumps(status)  # 키 자체는 화면으로 보내지 않음
     assert (tmp_path / "llm_api_key.txt").read_text(encoding="utf-8") == "test-key"
     assert "test-key" not in (tmp_path / "config.yaml").read_text(encoding="utf-8")
@@ -69,24 +69,31 @@ def test_state_saves_settings_and_keys(tmp_path):
 
 def test_state_llm_keeps_saved_key_when_blank(tmp_path):
     state = DashboardState(tmp_path / "config.yaml")
-    state.save_llm({"enabled": False, "base_url": "https://api.openai.com/v1", "model": "gpt-4o-mini", "api_key": "first"})
+    state.save_llm({"base_url": "https://api.openai.com/v1", "model": "gpt-4o-mini", "api_key": "first"})
 
-    state.save_llm({"enabled": True, "base_url": "https://api.openai.com/v1", "model": "gpt-4o-mini", "api_key": ""})
+    state.save_llm({"base_url": "https://api.openai.com/v1", "model": "gpt-4.1-mini", "api_key": ""})
 
     assert (tmp_path / "llm_api_key.txt").read_text(encoding="utf-8") == "first"
-    assert state.status()["llm"]["enabled"]
+    assert state.status()["llm"]["model"] == "gpt-4.1-mini"
 
 
-def test_state_llm_validation(tmp_path):
+def test_state_llm_is_required(tmp_path):
     state = DashboardState(tmp_path / "config.yaml")
-    with pytest.raises(ValueError, match="모두 필요"):
-        state.save_llm({"enabled": True, "base_url": "https://api.openai.com/v1", "model": "gpt-4o-mini"})
+    assert state.status()["llm"]["ready"] is False
+
+    with pytest.raises(ValueError, match="API 주소"):
+        state.save_llm({"base_url": "", "model": "auto", "api_key": "k"})
+    with pytest.raises(ValueError, match="모델 이름"):
+        state.save_llm({"base_url": "https://api.openai.com/v1", "model": "", "api_key": "k"})
+    with pytest.raises(ValueError, match="API 키"):
+        state.save_llm({"base_url": "https://api.openai.com/v1", "model": "gpt-4o-mini"})
     with pytest.raises(ValueError, match="https"):
-        state.save_llm({"enabled": False, "base_url": "http://example.com/v1", "model": "m"})
+        state.save_llm({"base_url": "http://example.com/v1", "model": "m", "api_key": "k"})
     with pytest.raises(ValueError, match="공백"):
-        state.save_llm({"enabled": False, "base_url": "", "model": "", "api_key": "a b"})
+        state.save_llm({"base_url": "https://api.openai.com/v1", "model": "m", "api_key": "a b"})
     with pytest.raises(ValueError, match="먼저 저장"):
         state.test_llm()
+    assert not (tmp_path / "llm_api_key.txt").exists()
 
 
 @pytest.fixture

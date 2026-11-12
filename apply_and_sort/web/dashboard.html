@@ -47,9 +47,11 @@
   .chip { font-size: 12px; padding: 2px 8px; border-radius: 99px; background: var(--line); color: var(--muted); }
   .chip.ok { background: var(--accent-soft); color: var(--accent); }
   .msg { font-size: 13px; margin-top: 6px; min-height: 1em; }
+  .next { display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap;
+          margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+  .next button { padding: 9px 22px; }
   .field { margin-top: 8px; }
   .field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 3px; }
-  .check { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-weight: 600; cursor: pointer; }
   code { font: 12px ui-monospace, Consolas, monospace; background: var(--line); padding: 1px 5px; border-radius: 5px; }
   .msg.err { color: var(--bad); }
   .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
@@ -131,10 +133,9 @@
       <div class="step" id="step-llm">
         <div class="num">4</div>
         <div>
-          <b>AI 연결</b> <span class="muted">(선택)</span> <span class="chip" id="chip-llm">꺼짐</span>
-          <div class="muted">켜 두면 처음 보는 회사의 기업규모를 AI가 찾아 채워요. OpenAI 호환(Chat Completions) 형식이면 어디든 연결돼요.
+          <b>AI 연결</b> <span class="chip" id="chip-llm">미설정</span>
+          <div class="muted">처음 보는 회사의 기업규모를 AI가 찾아 채워요. OpenAI 호환(Chat Completions) 형식이면 어디든 연결돼요.
             (예: <code>https://api.openai.com/v1</code>, 통합 키 서비스 freellmapi, 내 PC의 로컬 모델)</div>
-          <label class="check"><input type="checkbox" id="llm-on"> AI로 채우기 사용하기</label>
           <div class="field">
             <label for="llm-url">API 주소 (OpenAI 호환)</label>
             <input type="text" id="llm-url" placeholder="예: https://api.openai.com/v1" autocomplete="off" spellcheck="false">
@@ -155,6 +156,10 @@
           <div class="msg" id="msg-llm"></div>
         </div>
       </div>
+    </div>
+    <div class="next">
+      <span class="muted" id="next-hint"></span>
+      <button class="primary" id="go-dash" disabled>다음 →</button>
     </div>
   </section>
 
@@ -208,7 +213,17 @@ function chip(id, ok, okText, noText) {
   el.classList.toggle("ok", ok);
 }
 
-function ready(s) { return s.credentials && s.connected && s.spreadsheet_url; }
+// 처음 설정 4단계가 모두 끝나야 대시보드로 넘어갈 수 있다 (AI 연결 포함)
+function missingSteps(s) {
+  const missing = [];
+  if (!s.credentials) missing.push("1. OAuth 키");
+  if (!s.connected) missing.push("2. 구글 계정 연결");
+  if (!s.spreadsheet_url) missing.push("3. 시트 주소");
+  if (!(s.llm && s.llm.ready)) missing.push("4. AI 연결");
+  return missing;
+}
+
+function ready(s) { return missingSteps(s).length === 0; }
 
 function renderStatus(s) {
   status = s;
@@ -217,18 +232,21 @@ function renderStatus(s) {
   chip("chip-conn", s.connected, "연결됨", s.oauth.running ? "로그인 대기 중..." : "연결 안 됨");
   chip("chip-sheet", !!s.spreadsheet_url, "저장됨", "미설정");
   const llm = s.llm || {};
-  chip("chip-llm", llm.enabled, "켜짐", "꺼짐");
+  chip("chip-llm", !!llm.ready, "저장됨", "미설정");
   $("llm-key-hint").textContent = llm.has_key ? "(저장된 키 있음 — 바꿀 때만 입력)" : "";
   if (!llmLoaded) {  // 입력 중인 값을 상태 갱신이 덮어쓰지 않도록 처음 한 번만 채운다
     llmLoaded = true;
-    $("llm-on").checked = !!llm.enabled;
     $("llm-url").value = llm.base_url || "";
     $("llm-model").value = llm.model || "";
   }
   $("step-cred").classList.toggle("done", s.credentials);
   $("step-conn").classList.toggle("done", s.connected);
   $("step-sheet").classList.toggle("done", !!s.spreadsheet_url);
-  $("step-llm").classList.toggle("done", !!llm.enabled);
+  $("step-llm").classList.toggle("done", !!llm.ready);
+  const missing = missingSteps(s);
+  $("go-dash").disabled = missing.length > 0;
+  $("next-hint").textContent = missing.length ? `남은 단계: ${missing.join(", ")}` : "모든 설정이 끝났어요!";
+  $("toggle-setup").hidden = missing.length > 0;  // 설정이 끝나기 전에는 대시보드로 숨길 곳이 없음
   $("connect").disabled = !s.credentials || s.oauth.running;
   $("login-link").hidden = !s.oauth.auth_url;
   if (s.oauth.auth_url) {
@@ -244,10 +262,7 @@ async function refreshStatus() {
   const wasWaiting = status && status.oauth.running;
   renderStatus(await api("/api/status"));
   if (status.oauth.running) { setTimeout(refreshStatus, 1500); return; }
-  if (wasWaiting && status.connected) {
-    say("msg-conn", "연결했어요.");
-    refreshSummary();
-  }
+  if (wasWaiting && status.connected) say("msg-conn", "연결했어요.");
 }
 
 function pct(rate) { return rate == null ? "-" : (rate * 100).toFixed(1) + "%"; }
@@ -262,8 +277,7 @@ function renderSummary(d) {
   $("k-rate").textContent = pct(o.rate);
 
   $("notice").hidden = !d.unclassified;
-  $("notice-text").textContent = `기업규모가 비어 있는 행이 ${d.unclassified}개 있어요.` +
-    (status && status.llm && status.llm.enabled ? "" : " [설정] 4단계에서 AI를 연결하면 처음 보는 회사도 AI가 찾아 채워요.");
+  $("notice-text").textContent = `기업규모가 비어 있는 행이 ${d.unclassified}개 있어요. 버튼을 누르면 AI가 찾아 채워요.`;
 
   const box = $("groups");
   box.replaceChildren();
@@ -355,6 +369,7 @@ $("disconnect").addEventListener("click", async () => {
   renderStatus((await api("/api/disconnect", {})).status);
   say("msg-conn", "연결을 해제했어요.");
   $("dash").hidden = true;
+  $("setup").hidden = false;
 });
 
 $("save-sheet").addEventListener("click", async () => {
@@ -362,14 +377,14 @@ $("save-sheet").addEventListener("click", async () => {
     const r = await api("/api/settings", { spreadsheet_url: $("sheet-url").value, data_sheet: $("sheet-name").value });
     renderStatus(r.status);
     say("msg-sheet", "저장했어요.");
-    refreshSummary();
+    if (!$("dash").hidden) refreshSummary();  // 대시보드를 보다가 시트를 바꾼 경우에만 바로 다시 불러온다
   } catch (e) { say("msg-sheet", e.message, true); }
 });
 
 $("save-llm").addEventListener("click", async () => {
   try {
     const r = await api("/api/llm", {
-      enabled: $("llm-on").checked, base_url: $("llm-url").value, model: $("llm-model").value, api_key: $("llm-key").value,
+      base_url: $("llm-url").value, model: $("llm-model").value, api_key: $("llm-key").value,
     });
     $("llm-key").value = "";  // 저장한 키는 다시 표시하지 않음
     renderStatus(r.status);
@@ -394,6 +409,7 @@ $("classify").addEventListener("click", async () => {
 
 $("refresh").addEventListener("click", refreshSummary);
 $("toggle-setup").addEventListener("click", () => { $("setup").hidden = !$("setup").hidden; });
+$("go-dash").addEventListener("click", refreshSummary);
 $("quit").addEventListener("click", async () => {
   await api("/api/quit", {}).catch(() => {});
   document.body.innerHTML = '<div class="wrap"><p>종료했어요. 이 창을 닫아도 돼요.</p></div>';

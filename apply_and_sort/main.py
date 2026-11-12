@@ -114,7 +114,7 @@ def _cmd_classify(args) -> int:
     tracker, config = _tracker(args.config, interactive=not os.environ.get("CI"))
     classifier = load_classifier(config, args.config)
     if classifier is None:
-        print("참고: AI 연결(API 주소·모델)이 설정되지 않아 기업정보 탭에 있는 회사만 채웁니다.", file=sys.stderr)
+        raise ConfigError("AI 연결이 설정되지 않았어요. `apply-and-sort` 대시보드의 4단계에서 API 주소·모델·키를 저장해 주세요.")
     report = tracker.fill_sizes(classifier, time_limit=args.time_limit, progress=print)
     print(report.message())
     for error in report.errors:

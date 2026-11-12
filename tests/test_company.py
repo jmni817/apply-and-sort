@@ -110,13 +110,12 @@ def test_validate_base_url_allows_https_and_localhost_only():
         validate_base_url("http://example.com/v1")
 
 
-def test_load_classifier_needs_enabled_url_model_and_key(tmp_path):
+def test_load_classifier_needs_url_model_and_key(tmp_path):
     config_path = tmp_path / "config.yaml"
     config = default_config()
-    config["llm"].update({"base_url": "http://127.0.0.1:31415/v1", "model": "auto"})
 
-    assert load_classifier(config, config_path) is None  # 꺼져 있음
-    config["llm"]["enabled"] = True
+    assert load_classifier(config, config_path) is None  # 아무것도 없음
+    config["llm"].update({"base_url": "http://127.0.0.1:31415/v1", "model": "auto"})
     assert load_classifier(config, config_path) is None  # 키 없음
     (tmp_path / "llm_api_key.txt").write_text("secret", encoding="utf-8")
     assert load_classifier(config, config_path) is not None
