@@ -27,7 +27,7 @@ USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) apply-and-sort (+https:/
 MAX_CANDIDATES = 6
 PER_TERM = 3  # 검색어 하나에서 가져올 후보 수 (괄호를 뗀 이름의 결과가 밀려나지 않도록)
 REQUEST_GAP_SECONDS = 0.4
-# 'KFC 아산터미널점' 같은 지점·가맹점은 본사가 아니므로 후보에서 뺀다
+# 'OO역점' 같은 지점·가맹점은 본사가 아니므로 후보에서 뺀다
 _BRANCH_RE = re.compile(r"(점|지점|가맹점|대리점)\s*$|지점\b")
 
 _LINK_RE = re.compile(r'href="(/zf_user/company-info/view\?csn=[^"&]+)')
@@ -39,19 +39,19 @@ _CORP_MARKS_RE = re.compile(r"\(주\)|㈜|주식회사|\(유\)|유한회사|\(�
 
 @dataclass
 class SaraminCompany:
-    name: str  # 사람인에 등록된 회사명 (예: (주)발렌라이프)
+    name: str  # 사람인에 등록된 회사명 (예: (주)가나다랩)
     company_type: str  # 기업형태 (대기업/중견기업/중소기업/기타/- 등)
     industry: str = ""
     url: str = ""
 
 
 def normalize_name(name: str) -> str:
-    """(주)·주식회사·공백·기호를 빼고 소문자로. '(주)발렌라이프' == '발렌라이프'"""
+    """(주)·주식회사·공백·기호를 빼고 소문자로. '(주)가나다랩' == '가나다랩'"""
     return _CORP_MARKS_RE.sub("", name).lower()
 
 
 def search_terms(company: str) -> list[str]:
-    """검색어 후보: 원래 이름, 괄호를 뗀 이름, 괄호 안 이름. ('피츠 (블랑네이처)' → 피츠, 블랑네이처)"""
+    """검색어 후보: 원래 이름, 괄호를 뗀 이름, 괄호 안 이름. ('가나다 (라마바)' → 가나다, 라마바)"""
     terms = [company.strip()]
     outside = re.sub(r"\([^)]*\)", " ", company).strip()
     inside = re.findall(r"\(([^)]*)\)", company)
