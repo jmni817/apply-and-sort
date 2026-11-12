@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>apply-and-sort</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🥝%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #f6f7f4; --card: #ffffff; --text: #1f2a24; --muted: #66736b; --line: #e3e7e1;
+    --accent: #2f8f5b; --accent-soft: #e3f3e9; --warn: #b7791f; --warn-soft: #fdf3dd;
+    --bad: #c0392b; --bar: #cfe9d9;
+    --s-big: #3b6fd8; --s-mid: #2f8f5b; --s-small: #d08a2a; --s-unknown: #9aa39d;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141816; --card: #1c211e; --text: #e6ebe7; --muted: #9aa7a0; --line: #2c3430;
+      --accent: #5cc48b; --accent-soft: #1f3a2b; --warn: #e3b25a; --warn-soft: #3a3020;
+      --bad: #ef7b6e; --bar: #2a4a37;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.55 "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 16px 64px; }
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  header h1 { font-size: 22px; margin: 0; }
+  header .ver { color: var(--muted); font-size: 13px; }
+  header .spacer { flex: 1; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+  .card h2 { font-size: 17px; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+  button { font: inherit; border: 1px solid var(--line); background: var(--card); color: var(--text);
+           border-radius: 9px; padding: 7px 14px; cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button:disabled { opacity: .55; cursor: default; }
+  input[type=text], input[type=password], input[type=url] {
+    font: inherit; width: 100%; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--text); }
+  .muted { color: var(--muted); font-size: 13px; }
+  .steps { display: grid; gap: 14px; }
+  .step { display: grid; grid-template-columns: 28px 1fr; gap: 12px; align-items: start; }
+  .num { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+         background: var(--line); font-weight: 700; font-size: 13px; }
+  .step.done .num { background: var(--accent); color: #fff; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+  .row > input { flex: 1 1 260px; }
+  .chip { font-size: 12px; padding: 2px 8px; border-radius: 99px; background: var(--line); color: var(--muted); }
+  .chip.ok { background: var(--accent-soft); color: var(--accent); }
+  .msg { font-size: 13px; margin-top: 6px; min-height: 1em; }
+  .msg.err { color: var(--bad); }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .kpi .label { color: var(--muted); font-size: 13px; }
+  .kpi .value { font-size: 28px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .kpi.hero .value { color: var(--accent); }
+  .notice { background: var(--warn-soft); color: var(--warn); border-radius: 12px; padding: 12px 16px;
+            display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+  .notice span { flex: 1 1 260px; }
+  .log { font: 12px/1.5 ui-monospace, Consolas, monospace; color: var(--muted); max-height: 120px; overflow: auto;
+         white-space: pre-wrap; margin-top: 8px; }
+  .groups { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .grow { display: grid; grid-template-columns: minmax(80px, 34%) 1fr 92px; gap: 10px; align-items: center;
+          padding: 7px 0; border-top: 1px solid var(--line); }
+  .grow:first-of-type { border-top: 0; }
+  .gname { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .track { height: 10px; background: var(--line); border-radius: 99px; overflow: hidden; }
+  .fill { height: 100%; background: var(--accent); border-radius: 99px; }
+  .gnum { text-align: right; font-variant-numeric: tabular-nums; font-size: 14px; }
+  .gnum b { font-size: 15px; }
+  .gnum small { display: block; color: var(--muted); font-size: 12px; }
+  .empty { color: var(--muted); padding: 24px 0; text-align: center; }
+  @media (max-width: 760px) {
+    .kpis { grid-template-columns: repeat(2, 1fr); }
+    .groups { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🥝 apply-and-sort</h1>
+    <span class="ver" id="ver"></span>
+    <span class="spacer"></span>
+    <button id="toggle-setup">설정</button>
+    <button id="quit">종료</button>
+  </header>
+
+  <section class="card" id="setup">
+    <h2>처음 설정 <span class="muted">한 번만 하면 돼요</span></h2>
+    <div class="steps">
+      <div class="step" id="step-cred">
+        <div class="num">1</div>
+        <div>
+          <b>Google OAuth 키 등록</b> <span class="chip" id="chip-cred">미등록</span>
+          <div class="muted">Google Cloud Console 에서 만든 '데스크톱 앱' 유형의 credentials.json 파일을 골라 주세요. (README 참고)</div>
+          <div class="row"><input type="file" id="cred-file" accept=".json,application/json"></div>
+          <div class="msg" id="msg-cred"></div>
+        </div>
+      </div>
+      <div class="step" id="step-conn">
+        <div class="num">2</div>
+        <div>
+          <b>구글 계정 연결</b> <span class="chip" id="chip-conn">연결 안 됨</span>
+          <div class="muted">버튼을 누르면 브라우저에서 구글 로그인 창이 열려요. 시트 읽기·쓰기 권한만 요청해요.</div>
+          <div class="row">
+            <button class="primary" id="connect">구글 계정 연결</button>
+            <button id="disconnect">연결 해제</button>
+            <a id="login-link" target="_blank" rel="noopener" hidden><button class="primary" type="button">Google 로그인 열기 ↗</button></a>
+          </div>
+          <div class="msg" id="msg-conn"></div>
+        </div>
+      </div>
+      <div class="step" id="step-sheet">
+        <div class="num">3</div>
+        <div>
+          <b>구글 시트 주소</b> <span class="chip" id="chip-sheet">미설정</span>
+          <div class="muted">지원 기록 시트의 주소 전체와, 기록이 있는 탭 이름을 넣어 주세요. 1행에 '회사', '서류' 열이 있어야 해요.</div>
+          <div class="row">
+            <input type="url" id="sheet-url" placeholder="https://docs.google.com/spreadsheets/d/...">
+            <input type="text" id="sheet-name" placeholder="탭 이름 (기본: 지원현황)" style="flex:0 1 180px">
+            <button class="primary" id="save-sheet">저장</button>
+          </div>
+          <div class="msg" id="msg-sheet"></div>
+        </div>
+      </div>
+      <div class="step" id="step-claude">
+        <div class="num">4</div>
+        <div>
+          <b>Claude API 키</b> <span class="muted">(선택)</span> <span class="chip" id="chip-claude">미등록</span>
+          <div class="muted">등록하면 처음 보는 회사의 기업규모를 Claude 가 웹 검색으로 찾아 채워요. 키는 이 PC 에만 저장돼요.</div>
+          <div class="row">
+            <input type="password" id="claude-key" placeholder="sk-ant-..." autocomplete="off">
+            <button class="primary" id="save-key">저장</button>
+            <button id="delete-key">삭제</button>
+          </div>
+          <div class="msg" id="msg-claude"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <main id="dash" hidden>
+    <div class="row" style="justify-content:space-between;margin:0 0 12px">
+      <div><b id="sheet-title"></b> <span class="muted" id="updated"></span></div>
+      <button id="refresh">새로고침</button>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="label">지원</div><div class="value" id="k-applied">-</div></div>
+      <div class="kpi"><div class="label">서류 결과 나옴</div><div class="value" id="k-decided">-</div></div>
+      <div class="kpi"><div class="label">서류 합격</div><div class="value" id="k-passed">-</div></div>
+      <div class="kpi hero"><div class="label">서류 합격률</div><div class="value" id="k-rate">-</div></div>
+    </div>
+    <div class="notice" id="notice" hidden>
+      <span id="notice-text"></span>
+      <button class="primary" id="classify">기업규모 자동 채우기</button>
+    </div>
+    <div class="card" id="job" hidden>
+      <b>기업규모 채우는 중</b>
+      <div class="msg" id="job-result"></div>
+      <div class="log" id="job-log"></div>
+    </div>
+    <div class="groups" id="groups"></div>
+  </main>
+  <div class="msg err" id="msg-dash"></div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let status = null;
+
+async function api(path, body) {
+  const opts = body === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
+  const res = await fetch(path, opts);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `오류 (HTTP ${res.status})`);
+  return data;
+}
+
+function say(id, text, isError) {
+  const el = $(id);
+  el.textContent = text || "";
+  el.classList.toggle("err", !!isError);
+}
+
+function chip(id, ok, okText, noText) {
+  const el = $(id);
+  el.textContent = ok ? okText : noText;
+  el.classList.toggle("ok", ok);
+}
+
+function ready(s) { return s.credentials && s.connected && s.spreadsheet_url; }
+
+function renderStatus(s) {
+  status = s;
+  $("ver").textContent = "v" + s.version;
+  chip("chip-cred", s.credentials, "등록됨", "미등록");
+  chip("chip-conn", s.connected, "연결됨", s.oauth.running ? "로그인 대기 중..." : "연결 안 됨");
+  chip("chip-sheet", !!s.spreadsheet_url, "저장됨", "미설정");
+  chip("chip-claude", s.claude_key, "등록됨", "미등록");
+  $("step-cred").classList.toggle("done", s.credentials);
+  $("step-conn").classList.toggle("done", s.connected);
+  $("step-sheet").classList.toggle("done", !!s.spreadsheet_url);
+  $("step-claude").classList.toggle("done", s.claude_key);
+  $("connect").disabled = !s.credentials || s.oauth.running;
+  $("login-link").hidden = !s.oauth.auth_url;
+  if (s.oauth.auth_url) {
+    $("login-link").href = s.oauth.auth_url;
+    say("msg-conn", "[Google 로그인 열기]를 눌러 로그인과 권한 허용을 마치면 자동으로 연결돼요.");
+  }
+  if (s.oauth.error) say("msg-conn", s.oauth.error, true);
+  if (!$("sheet-url").value) $("sheet-url").value = s.spreadsheet_url || "";
+  if (!$("sheet-name").value) $("sheet-name").value = s.data_sheet || "";
+}
+
+async function refreshStatus() {
+  const wasWaiting = status && status.oauth.running;
+  renderStatus(await api("/api/status"));
+  if (status.oauth.running) { setTimeout(refreshStatus, 1500); return; }
+  if (wasWaiting && status.connected) {
+    say("msg-conn", "연결했어요.");
+    refreshSummary();
+  }
+}
+
+function pct(rate) { return rate == null ? "-" : (rate * 100).toFixed(1) + "%"; }
+
+function renderSummary(d) {
+  $("sheet-title").textContent = d.title;
+  $("updated").textContent = "· " + new Date().toLocaleTimeString("ko-KR") + " 기준";
+  const o = d.overall;
+  $("k-applied").textContent = o.applied;
+  $("k-decided").textContent = o.decided;
+  $("k-passed").textContent = o.passed;
+  $("k-rate").textContent = pct(o.rate);
+
+  $("notice").hidden = !d.unclassified;
+  $("notice-text").textContent = `기업규모가 비어 있는 행이 ${d.unclassified}개 있어요.` +
+    (status && status.claude_key ? "" : " Claude API 키를 등록하면 처음 보는 회사도 자동으로 찾아요.");
+
+  const box = $("groups");
+  box.replaceChildren();
+  for (const g of d.groups) {
+    const card = document.createElement("section");
+    card.className = "card";
+    const h = document.createElement("h2");
+    h.textContent = g.title;
+    card.append(h);
+    if (!g.rows.length) {
+      const e = document.createElement("div");
+      e.className = "empty";
+      e.textContent = "기록이 없어요";
+      card.append(e);
+    }
+    for (const r of g.rows) {
+      const row = document.createElement("div");
+      row.className = "grow";
+      const name = document.createElement("div");
+      name.className = "gname";
+      name.textContent = r.name;
+      name.title = r.name;
+      const track = document.createElement("div");
+      track.className = "track";
+      const fill = document.createElement("div");
+      fill.className = "fill";
+      fill.style.width = r.rate == null ? "0" : Math.max(r.rate * 100, 2) + "%";
+      track.append(fill);
+      const num = document.createElement("div");
+      num.className = "gnum";
+      const b = document.createElement("b");
+      b.textContent = pct(r.rate);
+      const small = document.createElement("small");
+      small.textContent = `${r.passed}/${r.decided}` + (r.waiting ? ` · 대기 ${r.waiting}` : "");
+      num.append(b, small);
+      row.append(name, track, num);
+      card.append(row);
+    }
+    box.append(card);
+  }
+}
+
+async function refreshSummary() {
+  if (!status || !ready(status)) { $("dash").hidden = true; return; }
+  say("msg-dash", "구글 시트를 불러오는 중...");
+  $("refresh").disabled = true;
+  try {
+    renderSummary(await api("/api/summary"));
+    say("msg-dash", "");
+    $("dash").hidden = false;
+    $("setup").hidden = true;
+  } catch (e) {
+    say("msg-dash", e.message, true);
+  } finally {
+    $("refresh").disabled = false;
+  }
+}
+
+async function pollJob() {
+  const j = await api("/api/job");
+  $("job").hidden = false;
+  $("job-log").textContent = j.log.join("\n");
+  $("job-log").scrollTop = 1e9;
+  $("classify").disabled = j.running;
+  if (j.running) { setTimeout(pollJob, 1500); return; }
+  const lines = [j.result, ...j.errors].filter(Boolean);
+  say("job-result", lines.join(" / "), j.errors.length > 0);
+  refreshSummary();
+}
+
+$("cred-file").addEventListener("change", async (ev) => {
+  const file = ev.target.files[0];
+  if (!file) return;
+  try {
+    const r = await api("/api/credentials", { text: await file.text() });
+    renderStatus(r.status);
+    say("msg-cred", "등록했어요.");
+  } catch (e) { say("msg-cred", e.message, true); }
+  ev.target.value = "";
+});
+
+$("connect").addEventListener("click", async () => {
+  say("msg-conn", "브라우저에서 구글 로그인을 마치면 자동으로 연결돼요.");
+  try { renderStatus((await api("/api/connect", {})).status); refreshStatus(); }
+  catch (e) { say("msg-conn", e.message, true); }
+});
+
+$("disconnect").addEventListener("click", async () => {
+  renderStatus((await api("/api/disconnect", {})).status);
+  say("msg-conn", "연결을 해제했어요.");
+  $("dash").hidden = true;
+});
+
+$("save-sheet").addEventListener("click", async () => {
+  try {
+    const r = await api("/api/settings", { spreadsheet_url: $("sheet-url").value, data_sheet: $("sheet-name").value });
+    renderStatus(r.status);
+    say("msg-sheet", "저장했어요.");
+    refreshSummary();
+  } catch (e) { say("msg-sheet", e.message, true); }
+});
+
+$("save-key").addEventListener("click", async () => {
+  try {
+    const r = await api("/api/claude-key", { key: $("claude-key").value });
+    $("claude-key").value = "";
+    renderStatus(r.status);
+    say("msg-claude", "저장했어요.");
+  } catch (e) { say("msg-claude", e.message, true); }
+});
+
+$("delete-key").addEventListener("click", async () => {
+  renderStatus((await api("/api/claude-key", { key: "" })).status);
+  say("msg-claude", "삭제했어요.");
+});
+
+$("classify").addEventListener("click", async () => {
+  $("classify").disabled = true;
+  say("job-result", "");
+  try { await api("/api/classify", {}); pollJob(); }
+  catch (e) { say("job-result", e.message, true); $("classify").disabled = false; }
+});
+
+$("refresh").addEventListener("click", refreshSummary);
+$("toggle-setup").addEventListener("click", () => { $("setup").hidden = !$("setup").hidden; });
+$("quit").addEventListener("click", async () => {
+  await api("/api/quit", {}).catch(() => {});
+  document.body.innerHTML = '<div class="wrap"><p>종료했어요. 이 창을 닫아도 돼요.</p></div>';
+});
+
+(async () => {
+  if (location.protocol === "file:") {
+    document.body.innerHTML = '<div class="wrap"><p>이 파일을 직접 열면 동작하지 않아요. 터미널에서 <code>apply-and-sort</code> 를 실행해 열린 창(127.0.0.1 주소)을 써 주세요.</p></div>';
+    return;
+  }
+  await refreshStatus();
+  if (ready(status)) refreshSummary();
+})();
+</script>
+</body>
+</html>
