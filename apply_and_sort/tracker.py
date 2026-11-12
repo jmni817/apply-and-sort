@@ -37,22 +37,32 @@ class Tracker:
         self.sheets = sheets
         self.config = config
         self.columns: dict[str, str] = config["columns"]
+        self._data_sheet: str | None = None
 
     # ---- 읽기
 
-    def check_data_sheet(self) -> None:
-        """데이터 탭이 실제로 있는지 확인. 시트 제목을 탭 이름으로 잘못 넣는 경우가 많아 탭 목록을 알려 준다."""
-        name = self.config["data_sheet"]
-        names = self.sheets.sheet_names()
-        if name not in names:
-            raise SheetFormatError(
-                f"'{name}' 탭이 없어요. 시트 제목이 아니라 아래쪽 탭 이름을 넣어 주세요. "
-                f"(이 시트에 있는 탭: {', '.join(names)})"
-            )
+    def data_sheet(self) -> str:
+        """지원 기록이 있는 탭을 찾는다: 1행에 '회사'와 '서류' 열이 있는 첫 번째 탭.
+
+        사용자가 탭 이름을 고를 필요가 없도록 헤더를 보고 자동으로 정한다.
+        (config.yaml 의 data_sheet 에 조건에 맞는 탭 이름이 있으면 그 탭을 먼저 쓴다)
+        """
+        if self._data_sheet is None:
+            names = self.sheets.sheet_names()
+            headers = self.sheets.header_rows(names)
+            required = {self.columns["company"], self.columns["document"]}
+            candidates = [n for n in names if n != self.config["cache_sheet"] and required <= set(headers.get(n, []))]
+            if not candidates:
+                raise SheetFormatError(
+                    f"1행에 '{self.columns['company']}'와 '{self.columns['document']}' 열이 있는 탭을 찾지 못했어요. "
+                    f"(이 시트에 있는 탭: {', '.join(names)})"
+                )
+            preferred = self.config.get("data_sheet") or ""
+            self._data_sheet = preferred if preferred in candidates else candidates[0]
+        return self._data_sheet
 
     def load(self) -> list[Application]:
-        self.check_data_sheet()
-        return parse_applications(self.sheets.read_values(self.config["data_sheet"]), self.columns)
+        return parse_applications(self.sheets.read_values(self.data_sheet()), self.columns)
 
     def summary(self) -> dict:
         return summarize(self.load())
@@ -73,7 +83,7 @@ class Tracker:
 
     def _size_column(self) -> int:
         """'기업규모' 열 번호. 없으면 헤더 맨 끝에 만든다."""
-        sheet = self.config["data_sheet"]
+        sheet = self.data_sheet()
         header = (self.sheets.read_values(sheet) or [[]])[0]
         index = header_index(header, self.columns)
         if "size" in index:
@@ -130,5 +140,5 @@ class Tracker:
             cells.append((app.row, size_col, info.size))
             report.filled += 1
 
-        self.sheets.update_cells(self.config["data_sheet"], cells)
+        self.sheets.update_cells(self.data_sheet(), cells)
         return report

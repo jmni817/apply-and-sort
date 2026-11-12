@@ -26,6 +26,9 @@ class FakeSheets:
     def ensure_sheet(self, name: str, header: list[str]) -> None:
         self.sheets.setdefault(name, [list(header)])
 
+    def header_rows(self, sheets: list[str]) -> dict[str, list[str]]:
+        return {name: list(self.sheets[name][0]) if self.sheets[name] else [] for name in sheets}
+
     def read_values(self, sheet: str) -> list[list[str]]:
         return copy.deepcopy(self.sheets[sheet])
 

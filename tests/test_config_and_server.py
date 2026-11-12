@@ -53,12 +53,13 @@ def test_state_saves_settings_and_keys(tmp_path):
     state = DashboardState(tmp_path / "config.yaml")
 
     state.save_credentials(json.dumps(CLIENT))
-    state.save_settings({"spreadsheet_url": f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/edit", "data_sheet": "시트1"})
+    found = state.save_settings({"spreadsheet_url": f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/edit"})
     state.save_llm({"base_url": "http://127.0.0.1:31415/v1", "model": "auto", "api_key": "test-key"})
     status = state.status()
 
+    assert found == ""  # 구글 계정 연결 전에는 기록 탭을 찾지 않고 주소만 저장
     assert status["credentials"] and not status["connected"]
-    assert status["data_sheet"] == "시트1"
+    assert status["spreadsheet_url"].endswith("/edit")
     assert status["llm"] == {"base_url": "http://127.0.0.1:31415/v1", "model": "auto", "has_key": True, "ready": True}
     assert "test-key" not in json.dumps(status)  # 키 자체는 화면으로 보내지 않음
     assert (tmp_path / "llm_api_key.txt").read_text(encoding="utf-8") == "test-key"

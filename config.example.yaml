@@ -5,8 +5,8 @@
 # 구글 시트 주소 (브라우저 주소창 전체)
 spreadsheet_url: "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/edit"
 
-# 지원 기록이 있는 탭 이름
-data_sheet: 지원현황
+# 지원 기록이 있는 탭. 비워 두면 1행에 '회사'·'서류' 열이 있는 탭을 자동으로 찾아요. (보통은 비워 두세요)
+data_sheet: ""
 
 # 회사별 기업규모를 저장하는 탭. 없으면 자동으로 만들어요.
 # 여기서 값을 직접 고치면, 다음부터는 그 값을 써요.

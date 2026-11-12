@@ -97,15 +97,30 @@ def test_fill_respects_time_limit(sample_values, config):
     assert report.filled == 2 and report.skipped == 2
 
 
-def test_wrong_tab_name_lists_real_tabs(sample_values, config):
+def test_finds_record_tab_by_header(sample_values, config):
+    # 탭 이름이 무엇이든 1행에 회사·서류 열이 있는 탭을 찾는다
+    fake = FakeSheets({"사용법": [["사용법"]], "내 기록": sample_values})
+    tracker = Tracker(fake, config)
+
+    assert tracker.data_sheet() == "내 기록"
+    assert tracker.summary()["overall"]["applied"] == 4
+
+
+def test_ignores_wrong_tab_name_in_config(sample_values, config):
+    config["data_sheet"] = "취준기록"  # 시트 제목을 탭 이름으로 잘못 넣은 경우
+    tracker, _ = make_tracker(sample_values, config)
+
+    assert tracker.data_sheet() == "지원현황"
+
+
+def test_no_record_tab_lists_real_tabs(config):
     import pytest
 
     from apply_and_sort.records import SheetFormatError
 
-    config["data_sheet"] = "취준기록"  # 시트 제목을 탭 이름으로 잘못 넣은 경우
-    tracker, _ = make_tracker(sample_values, config)
+    tracker = Tracker(FakeSheets({"사용법": [["사용법"]], "메모": [["날짜", "내용"]]}), config)
 
-    with pytest.raises(SheetFormatError, match="'취준기록' 탭이 없어요.*지원현황"):
+    with pytest.raises(SheetFormatError, match="'회사'와 '서류' 열이 있는 탭을 찾지 못했어요.*사용법, 메모"):
         tracker.summary()
 
 

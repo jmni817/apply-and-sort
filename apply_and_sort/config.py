@@ -17,7 +17,8 @@ class ConfigError(Exception):
 DEFAULT_CONFIG: dict[str, Any] = {
     # 구글 시트 주소 (브라우저 주소창의 https://docs.google.com/spreadsheets/d/... 전체)
     "spreadsheet_url": "",
-    "data_sheet": "지원현황",
+    # 비워 두면 1행에 회사·서류 열이 있는 탭을 자동으로 찾는다.
+    "data_sheet": "",
     # 회사별 기업규모를 저장해 두는 시트. 없으면 자동으로 만든다. 사람이 고친 값이 우선.
     "cache_sheet": "기업정보",
     "credentials_path": "credentials.json",

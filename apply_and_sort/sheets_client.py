@@ -240,6 +240,22 @@ class SheetsClient:
         )
         self.update_cells(name, [(1, i, value) for i, value in enumerate(header)])
 
+    def header_rows(self, sheets: list[str]) -> dict[str, list[str]]:
+        """탭마다 1행(헤더)만 한 번의 요청으로 읽는다."""
+        if not sheets:
+            return {}
+        data = self._call(
+            self._sheets.values().batchGet(
+                spreadsheetId=self.spreadsheet_id,
+                ranges=[f"{quote_sheet(name)}!1:1" for name in sheets],
+            )
+        )
+        rows = {}
+        for name, value_range in zip(sheets, data.get("valueRanges", [])):
+            values = value_range.get("values") or [[]]
+            rows[name] = [str(cell).strip() for cell in values[0]]
+        return rows
+
     def read_values(self, sheet: str) -> list[list[str]]:
         """시트 전체 값 (행마다 길이가 다를 수 있음)."""
         data = self._call(

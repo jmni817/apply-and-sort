@@ -34,7 +34,7 @@
            border-radius: 9px; padding: 7px 14px; cursor: pointer; white-space: nowrap; }
   button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
   button:disabled { opacity: .55; cursor: default; }
-  input[type=text], input[type=password], input[type=url] {
+  select, input[type=text], input[type=password], input[type=url] {
     font: inherit; width: 100%; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line);
     background: var(--bg); color: var(--text); }
   .muted { color: var(--muted); font-size: 13px; }
@@ -44,7 +44,7 @@
          background: var(--line); font-weight: 700; font-size: 13px; }
   .step.done .num { background: var(--accent); color: #fff; }
   .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
-  .row > input { flex: 1 1 260px; }
+  .row > input, .row > select { flex: 1 1 260px; }
   .chip { font-size: 12px; padding: 2px 8px; border-radius: 99px; background: var(--line); color: var(--muted); }
   .chip.ok { background: var(--accent-soft); color: var(--accent); }
   .msg { font-size: 13px; margin-top: 6px; min-height: 1em; }
@@ -122,10 +122,9 @@
         <div class="num">3</div>
         <div>
           <b>구글 시트 주소</b> <span class="chip" id="chip-sheet">미설정</span>
-          <div class="muted">지원 기록 시트의 주소 전체와, 기록이 있는 탭 이름을 넣어 주세요. 1행에 '회사', '서류' 열이 있어야 해요.</div>
+          <div class="muted">지원 기록 시트의 주소 전체를 붙여넣고 [저장]을 누르세요. 1행에 '회사'·'서류' 열이 있는 탭을 알아서 찾아요.</div>
           <div class="row">
             <input type="url" id="sheet-url" placeholder="https://docs.google.com/spreadsheets/d/...">
-            <input type="text" id="sheet-name" placeholder="탭 이름 (기본: 지원현황)" style="flex:0 1 180px">
             <button class="primary" id="save-sheet">저장</button>
           </div>
           <div class="msg" id="msg-sheet"></div>
@@ -261,7 +260,6 @@ function renderStatus(s) {
   }
   if (s.oauth.error) say("msg-conn", s.oauth.error, true);
   if (!$("sheet-url").value) $("sheet-url").value = s.spreadsheet_url || "";
-  if (!$("sheet-name").value) $("sheet-name").value = s.data_sheet || "";
 }
 
 async function refreshStatus() {
@@ -380,9 +378,9 @@ $("disconnect").addEventListener("click", async () => {
 
 $("save-sheet").addEventListener("click", async () => {
   try {
-    const r = await api("/api/settings", { spreadsheet_url: $("sheet-url").value, data_sheet: $("sheet-name").value });
+    const r = await api("/api/settings", { spreadsheet_url: $("sheet-url").value });
     renderStatus(r.status);
-    say("msg-sheet", "저장했어요.");
+    say("msg-sheet", r.found ? `저장했어요. 지원 기록은 '${r.found}' 탭에서 읽어요.` : "저장했어요.");
     if (!$("dash").hidden) refreshSummary();  // 대시보드를 보다가 시트를 바꾼 경우에만 바로 다시 불러온다
   } catch (e) { say("msg-sheet", e.message, true); }
 });

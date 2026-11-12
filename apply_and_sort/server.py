@@ -88,7 +88,6 @@ class DashboardState:
             "credentials": self.credentials_path(config).exists(),
             "connected": self.token_path(config).exists(),
             "spreadsheet_url": config.get("spreadsheet_url", ""),
-            "data_sheet": config.get("data_sheet", ""),
             "llm": self.llm_status(config),
             "oauth": dict(self.oauth),
         }
@@ -114,20 +113,21 @@ class DashboardState:
         if not self.config_path.exists():
             self._save(self.config())
 
-    def save_settings(self, payload: dict[str, Any]) -> None:
+    def save_settings(self, payload: dict[str, Any]) -> str:
+        """시트 주소 저장. 구글 계정이 연결돼 있으면 기록 탭을 자동으로 찾아 확인하고 그 이름을 돌려준다."""
         config = self.config()
         url = str(payload.get("spreadsheet_url") or "").strip()
         extract_spreadsheet_id(url)  # 형식 확인
         config["spreadsheet_url"] = url
-        sheet = str(payload.get("data_sheet") or "").strip()
-        if sheet:
-            config["data_sheet"] = sheet
-        if self.token_path(config).exists():  # 구글 계정이 연결돼 있으면 저장 전에 탭이 정말 있는지 확인
+        config["data_sheet"] = ""  # 기록 탭은 헤더를 보고 자동으로 찾는다
+        found = ""
+        if self.token_path(config).exists():
             sheets = SheetsClient.from_files(
                 self.credentials_path(config), self.token_path(config), extract_spreadsheet_id(url), interactive=False
             )
-            Tracker(sheets, config).check_data_sheet()
+            found = Tracker(sheets, config).data_sheet()
         self._save(config)
+        return found
 
     def save_llm(self, payload: dict[str, Any]) -> None:
         """AI 연결 저장 (필수). 새 키를 입력했을 때만 키 파일을 바꾸고, 비워 두면 기존 키를 그대로 쓴다."""
@@ -344,7 +344,8 @@ def _make_handler(state: DashboardState, access_token: str, allowed_hosts: set[s
                 if path == "/api/credentials":
                     state.save_credentials(str(payload.get("text") or ""))
                 elif path == "/api/settings":
-                    state.save_settings(payload)
+                    found = state.save_settings(payload)
+                    return self._json(HTTPStatus.OK, {"ok": True, "found": found, "status": state.status()})
                 elif path == "/api/llm":
                     state.save_llm(payload)
                 elif path == "/api/llm/test":
