@@ -34,7 +34,7 @@ apply-and-sort = "apply_and_sort.main:main"
 packages = ["apply_and_sort"]
 
 [tool.setuptools.package-data]
-apply_and_sort = ["web/*.html"]
+apply_and_sort = ["web/*.html", "web/*.png"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

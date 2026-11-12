@@ -106,6 +106,12 @@ def test_server_requires_access_token(server):
     assert res.status == 200 and b"apply-and-sort" in body
 
 
+def test_server_serves_icon_without_token(server):
+    res, body = request(server, "GET", "/icon.png")
+    assert res.status == 200 and res.getheader("Content-Type") == "image/png"
+    assert body.startswith(b"\x89PNG")
+
+
 def test_server_rejects_unknown_host(server):
     res, _ = request(server, "GET", "/?token=secret-token", {"Host": "evil.example:80"})
     assert res.status == 403

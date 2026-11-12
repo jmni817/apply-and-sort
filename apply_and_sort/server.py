@@ -203,7 +203,9 @@ class DashboardState:
 
 
 def _make_handler(state: DashboardState, access_token: str, allowed_hosts: set[str], stop: threading.Event):
-    page = resources.files("apply_and_sort").joinpath("web/dashboard.html").read_bytes()
+    web = resources.files("apply_and_sort").joinpath("web")
+    page = web.joinpath("dashboard.html").read_bytes()
+    icon = web.joinpath("icon.png").read_bytes()
 
     class Handler(BaseHTTPRequestHandler):
         server_version = "apply-and-sort"
@@ -251,6 +253,8 @@ def _make_handler(state: DashboardState, access_token: str, allowed_hosts: set[s
             if not self._host_ok():
                 return self._send(HTTPStatus.FORBIDDEN, b"forbidden", "text/plain")
             url = urlparse(self.path)
+            if url.path == "/icon.png":  # 캐릭터 이미지 (공개해도 되는 정적 파일)
+                return self._send(HTTPStatus.OK, icon, "image/png")
             if url.path == "/":
                 token = parse_qs(url.query).get("token", [""])[0]
                 if token and hmac.compare_digest(token, access_token):

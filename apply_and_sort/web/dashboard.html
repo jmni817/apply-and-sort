@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>apply-and-sort</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🥝%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="/icon.png">
 <style>
   :root {
     --bg: #f6f7f4; --card: #ffffff; --text: #1f2a24; --muted: #66736b; --line: #e3e7e1;
@@ -30,7 +30,7 @@
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
   .card h2 { font-size: 17px; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
   button { font: inherit; border: 1px solid var(--line); background: var(--card); color: var(--text);
-           border-radius: 9px; padding: 7px 14px; cursor: pointer; }
+           border-radius: 9px; padding: 7px 14px; cursor: pointer; white-space: nowrap; }
   button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
   button:disabled { opacity: .55; cursor: default; }
   input[type=text], input[type=password], input[type=url] {
@@ -78,7 +78,8 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>🥝 apply-and-sort</h1>
+    <img src="/icon.png" alt="" width="40" height="40">
+    <h1>apply-and-sort</h1>
     <span class="ver" id="ver"></span>
     <span class="spacer"></span>
     <button id="toggle-setup">설정</button>

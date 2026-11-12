@@ -3,6 +3,7 @@
 #   pyinstaller packaging/apply-and-sort.spec
 # 결과물: dist/apply-and-sort.exe (macOS/Linux 에서는 dist/apply-and-sort)
 
+import sys
 from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_data_files
@@ -36,6 +37,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     name="apply-and-sort",
+    icon=str(root / "assets" / ("icon.ico" if sys.platform == "win32" else "icon.png")),
     # 검은 콘솔 창 없이 프로그램 창(pywebview)만 뜬다. 출력은 %APPDATA%\apply-and-sort\apply-and-sort.log 로 기록.
     console=False,
     upx=False,

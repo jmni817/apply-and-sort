@@ -1,4 +1,4 @@
-<p align="center"><img src="assets/icon.svg" alt="apply-and-sort icon" width="160"></p>
+<p align="center"><img src="assets/icon.png" alt="apply-and-sort 키위 캐릭터" width="180"></p>
 
 <h1 align="center">🥝 apply-and-sort</h1>
 
