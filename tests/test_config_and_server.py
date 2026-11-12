@@ -122,15 +122,25 @@ def test_server_requires_access_token(server):
     res, _ = request(server, "GET", "/?token=wrong")
     assert res.status == 403
 
-    res, _ = request(server, "GET", "/?token=secret-token")
-    assert res.status == 302
+    res, _ = request(server, "GET", "/")
+    assert res.status == 403
+
+    # 첫 접속: 리다이렉트 없이 바로 페이지를 주고, 토큰을 페이지에 심는다 (프로그램 창에서도 동작)
+    res, body = request(server, "GET", "/?token=secret-token")
+    assert res.status == 200
+    assert b'<meta name="aas-token" content="secret-token">' in body
     cookie = res.getheader("Set-Cookie").split(";")[0]
 
-    res, body = request(server, "GET", "/api/status", {"Cookie": cookie})
+    res, body = request(server, "GET", "/api/status", {"X-AAS-Token": "secret-token"})
     assert res.status == 200 and json.loads(body)["credentials"] is False
+    res, _ = request(server, "GET", "/api/status", {"X-AAS-Token": "wrong"})
+    assert res.status == 403
 
+    # 새로고침: 쿠키로도 열린다
     res, body = request(server, "GET", "/", {"Cookie": cookie})
     assert res.status == 200 and b"apply-and-sort" in body
+    res, _ = request(server, "GET", "/api/status", {"Cookie": cookie})
+    assert res.status == 200
 
 
 def test_server_serves_icon_without_token(server):
@@ -145,9 +155,8 @@ def test_server_rejects_unknown_host(server):
 
 
 def test_server_reports_validation_errors(server):
-    cookie = "aas_session=secret-token"
     res, body = request(
-        server, "POST", "/api/settings", {"Cookie": cookie, "Content-Type": "application/json"},
+        server, "POST", "/api/settings", {"X-AAS-Token": "secret-token", "Content-Type": "application/json"},
         json.dumps({"spreadsheet_url": "nope"}),
     )
     assert res.status == 400 and "시트 주소" in json.loads(body)["error"]

@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>apply-and-sort</title>
+<meta name="aas-token" content="">
 <link rel="icon" href="/icon.png">
 <style>
   :root {
@@ -193,8 +194,13 @@ const $ = (id) => document.getElementById(id);
 let status = null;
 let llmLoaded = false;
 
+const TOKEN = document.querySelector('meta[name="aas-token"]').content;
+
 async function api(path, body) {
-  const opts = body === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
+  const headers = { "X-AAS-Token": TOKEN };
+  const opts = body === undefined
+    ? { headers }
+    : { method: "POST", headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify(body) };
   const res = await fetch(path, opts);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `오류 (HTTP ${res.status})`);

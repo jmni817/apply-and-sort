@@ -30,6 +30,8 @@ from .tracker import Tracker
 log = logging.getLogger(__name__)
 
 COOKIE_NAME = "aas_session"
+TOKEN_HEADER = "X-AAS-Token"
+TOKEN_META = b'<meta name="aas-token" content="">'  # 페이지를 줄 때 실제 토큰으로 바꿔 넣는 자리
 MAX_BODY = 64 * 1024
 CLASSIFY_TIME_LIMIT = 30 * 60  # 한 번 누를 때 최대 30분까지 AI 호출
 # [연결 테스트] 에서 물어볼 예시 (누구나 아는 회사라 결과를 바로 확인할 수 있음)
@@ -272,6 +274,10 @@ def _make_handler(state: DashboardState, access_token: str, allowed_hosts: set[s
             # DNS rebinding 방지: 우리가 연 주소로 들어온 요청만 받는다
             return self.headers.get("Host", "") in allowed_hosts
 
+        def _token_ok(self) -> bool:
+            # API 는 페이지에 심어 둔 토큰을 헤더로 보낸다 (프로그램 창(WebView2)에서도 쿠키 없이 동작)
+            return hmac.compare_digest(self.headers.get(TOKEN_HEADER, ""), access_token)
+
         def _cookie_ok(self) -> bool:
             try:
                 cookie = SimpleCookie(self.headers.get("Cookie", ""))
@@ -279,6 +285,9 @@ def _make_handler(state: DashboardState, access_token: str, allowed_hosts: set[s
                 return False
             morsel = cookie.get(COOKIE_NAME)
             return bool(morsel) and hmac.compare_digest(morsel.value, access_token)
+
+        def _auth_ok(self) -> bool:
+            return self._token_ok() or self._cookie_ok()
 
         def _read_json(self) -> dict[str, Any]:
             length = int(self.headers.get("Content-Length") or 0)
@@ -296,14 +305,19 @@ def _make_handler(state: DashboardState, access_token: str, allowed_hosts: set[s
             if url.path == "/icon.png":  # 캐릭터 이미지 (공개해도 되는 정적 파일)
                 return self._send(HTTPStatus.OK, icon, "image/png")
             if url.path == "/":
-                token = parse_qs(url.query).get("token", [""])[0]
-                if token and hmac.compare_digest(token, access_token):
-                    cookie = f"{COOKIE_NAME}={access_token}; HttpOnly; SameSite=Strict; Path=/"
-                    return self._send(HTTPStatus.FOUND, b"", "text/plain", [("Location", "/"), ("Set-Cookie", cookie)])
-                if not self._cookie_ok():
-                    return self._send(HTTPStatus.FORBIDDEN, "프로그램을 다시 실행해 주세요.".encode(), "text/plain; charset=utf-8")
-                return self._send(HTTPStatus.OK, page, "text/html; charset=utf-8")
-            if not self._cookie_ok():
+                given = parse_qs(url.query).get("token", [""])[0]
+                # 처음엔 ?token= 주소로, 새로고침 때는 쿠키로 확인한다. (리다이렉트 없이 바로 페이지를 준다)
+                # 쿠키는 SameSite=Strict 라 다른 사이트에서 이 페이지를 열 때는 전송되지 않는다.
+                if not (hmac.compare_digest(given, access_token) or self._cookie_ok()):
+                    msg = (
+                        "이 주소는 만료되었어요. apply-and-sort 를 다시 실행하면 새 창이 열려요. "
+                        "(보안을 위해 실행할 때마다 접속 주소가 바뀝니다)"
+                    ).encode("utf-8")
+                    return self._send(HTTPStatus.FORBIDDEN, msg, "text/plain; charset=utf-8")
+                body = page.replace(TOKEN_META, f'<meta name="aas-token" content="{access_token}">'.encode())
+                cookie = f"{COOKIE_NAME}={access_token}; Path=/; HttpOnly; SameSite=Strict"
+                return self._send(HTTPStatus.OK, body, "text/html; charset=utf-8", [("Set-Cookie", cookie)])
+            if not self._auth_ok():
                 return self._json(HTTPStatus.FORBIDDEN, {"error": "접속 토큰이 없어요. 프로그램을 다시 실행해 주세요."})
             try:
                 if url.path == "/api/status":
@@ -317,7 +331,7 @@ def _make_handler(state: DashboardState, access_token: str, allowed_hosts: set[s
             return self._json(HTTPStatus.NOT_FOUND, {"error": "not found"})
 
         def do_POST(self):
-            if not self._host_ok() or not self._cookie_ok():
+            if not self._host_ok() or not self._auth_ok():
                 return self._json(HTTPStatus.FORBIDDEN, {"error": "접속 토큰이 없어요. 프로그램을 다시 실행해 주세요."})
             path = urlparse(self.path).path
             try:
