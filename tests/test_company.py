@@ -91,10 +91,10 @@ class FakeLookup:
 
 def test_classify_uses_saramin_exact_match_without_ai():
     opener = FakeOpener()  # 호출되면 pop 에서 실패
-    lookup = FakeLookup(SaraminCompany("(주)발렌라이프", "중소기업", "광고 대행업"))
+    lookup = FakeLookup(SaraminCompany("(주)가나다랩", "중소기업", "광고 대행업"))
     clf = CompanyClassifier(LLMSettings("https://api.example.com/v1", "m", "k"), opener=opener, lookup=lookup)
 
-    info = clf.classify("발렌라이프", "마케팅")
+    info = clf.classify("가나다랩", "마케팅")
 
     assert (info.size, info.industry) == ("중소기업", "광고 대행업")
     assert "사람인" in info.reason
@@ -102,16 +102,16 @@ def test_classify_uses_saramin_exact_match_without_ai():
 
 
 def test_classify_sends_saramin_candidates_to_ai_when_ambiguous():
-    opener = FakeOpener(chat_response('{"size": "대기업", "reason": "사람인의 스노우(주)"}'))
-    lookup = FakeLookup(SaraminCompany("스노우(주)", "대기업", "응용 소프트웨어"), SaraminCompany("스노우베이", "중소기업", "전자상거래"))
+    opener = FakeOpener(chat_response('{"size": "대기업", "reason": "사람인의 에이비씨(주)"}'))
+    lookup = FakeLookup(SaraminCompany("에이비씨(주)", "대기업", "응용 소프트웨어"), SaraminCompany("에이비씨베이", "중소기업", "전자상거래"))
     clf = CompanyClassifier(LLMSettings("https://api.example.com/v1", "m", "k"), opener=opener, lookup=lookup)
 
-    info = clf.classify("snow", "카메라 콘텐츠 AI")
+    info = clf.classify("abc", "카메라 콘텐츠 AI")
 
     assert info.size == "대기업"
     user = json.loads(opener.requests[0].data)["messages"][1]["content"]
     assert "사람인 기업정보 조회 결과" in user
-    assert "스노우(주) | 기업형태: 대기업" in user and "스노우베이" in user
+    assert "에이비씨(주) | 기업형태: 대기업" in user and "에이비씨베이" in user
 
 
 def test_classify_tells_ai_when_saramin_found_nothing():
@@ -125,10 +125,10 @@ def test_classify_tells_ai_when_saramin_found_nothing():
 
 def test_classify_asks_ai_when_saramin_type_is_other():
     opener = FakeOpener(chat_response('{"size": "중견기업"}'))
-    lookup = FakeLookup(SaraminCompany("(주)야나두", "기타", "응용 소프트웨어"))
+    lookup = FakeLookup(SaraminCompany("(주)하하랩", "기타", "응용 소프트웨어"))
     clf = CompanyClassifier(LLMSettings("https://api.example.com/v1", "m", "k"), opener=opener, lookup=lookup)
 
-    assert clf.classify("야나두").size == "중견기업"
+    assert clf.classify("하하랩").size == "중견기업"
     assert len(opener.requests) == 1
 
 

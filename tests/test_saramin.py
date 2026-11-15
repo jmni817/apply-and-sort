@@ -1,4 +1,5 @@
 import urllib.error
+from urllib.parse import quote
 
 from apply_and_sort.saramin import (
     SaraminCompany,
@@ -38,12 +39,12 @@ class FakeFetch:
 
 
 def test_parse_company_page_reads_type_and_industry():
-    info = parse_company_page(company_page("(주)발렌라이프", "중소기업", "광고 대행업"))
-    assert (info.name, info.company_type, info.industry) == ("(주)발렌라이프", "중소기업", "광고 대행업")
+    info = parse_company_page(company_page("(주)가나다랩", "중소기업", "광고 대행업"))
+    assert (info.name, info.company_type, info.industry) == ("(주)가나다랩", "중소기업", "광고 대행업")
 
 
 def test_parse_company_page_takes_first_type_when_tagged():
-    html = company_page("(주)케이에프씨코리아", "대기업, 1000대기업", "치킨 전문점")
+    html = company_page("(주)라마바코리아", "대기업, 1000대기업", "음식점업")
     assert parse_company_page(html).company_type == "대기업"
 
 
@@ -52,61 +53,61 @@ def test_parse_company_page_without_info_is_none():
 
 
 def test_search_terms_split_parentheses():
-    assert search_terms("피츠 (블랑네이처)") == ["피츠 (블랑네이처)", "피츠", "블랑네이처"]
-    assert search_terms("snow") == ["snow"]
+    assert search_terms("가나 (라마바)") == ["가나 (라마바)", "가나", "라마바"]
+    assert search_terms("abc") == ["abc"]
 
 
 def test_normalize_name_ignores_corp_marks():
-    assert normalize_name("(주)발렌라이프") == normalize_name("발렌라이프") == normalize_name("주식회사 발렌 라이프")
-    assert normalize_name("스노우(주)") == "스노우"
+    assert normalize_name("(주)가나다랩") == normalize_name("가나다랩") == normalize_name("주식회사 가나다 랩")
+    assert normalize_name("에이비씨(주)") == "에이비씨"
 
 
 def test_lookup_collects_candidates_from_search():
     fetch = FakeFetch({
         "searchword=": search_page("A", "B"),
-        "csn=A": company_page("(주)발렌라이프", "중소기업", "광고 대행업"),
-        "csn=B": company_page("발렌상사", "중소기업", "도매업"),
+        "csn=A": company_page("(주)가나다랩", "중소기업", "광고 대행업"),
+        "csn=B": company_page("가나다상사", "중소기업", "도매업"),
     })
 
-    results = SaraminLookup(fetch=fetch, sleep=lambda s: None).search("발렌라이프")
+    results = SaraminLookup(fetch=fetch, sleep=lambda s: None).search("가나다랩")
 
-    assert [r.name for r in results] == ["(주)발렌라이프", "발렌상사"]
+    assert [r.name for r in results] == ["(주)가나다랩", "가나다상사"]
     assert results[0].url.endswith("csn=A")
 
 
 def test_lookup_takes_candidates_from_each_search_term():
     # 괄호가 든 원래 이름 검색 결과가 많아도, 괄호를 뗀 이름의 결과가 밀려나지 않는다
     fetch = FakeFetch({
-        "searchword=%ED%94%BC%EC%B8%A0%20%28": search_page("X1", "X2", "X3", "X4", "X5"),  # '피츠 (블랑네이처)'
-        "searchword=%ED%94%BC%EC%B8%A0": search_page("P"),  # '피츠'
-        "csn=P": company_page("(주)피츠", "중소기업", "화장품 제조업"),
+        "searchword=" + quote("가나 (라마바)"): search_page("X1", "X2", "X3", "X4", "X5"),
+        "searchword=" + quote("가나"): search_page("P"),
+        "csn=P": company_page("(주)가나", "중소기업", "화장품 제조업"),
         "csn=X": company_page("(주)엉뚱한회사", "중견기업", "기타"),
     })
 
-    results = SaraminLookup(fetch=fetch, sleep=lambda s: None).search("피츠 (블랑네이처)")
+    results = SaraminLookup(fetch=fetch, sleep=lambda s: None).search("가나 (라마바)")
 
-    assert "(주)피츠" in [r.name for r in results]
-    assert exact_match("피츠 (블랑네이처)", results).name == "(주)피츠"
+    assert "(주)가나" in [r.name for r in results]
+    assert exact_match("가나 (라마바)", results).name == "(주)가나"
 
 
 def test_lookup_skips_branch_stores():
     fetch = FakeFetch({
         "searchword=": search_page("A", "B"),
-        "csn=A": company_page("케이에프씨(KFC) 아산터미널투자점", "-", "외식업"),
-        "csn=B": company_page("케이에프씨동탄호수공원점", "중소기업", "음식점업"),
+        "csn=A": company_page("라마바(LMB) 가나역점", "-", "외식업"),
+        "csn=B": company_page("라마바다다공원점", "중소기업", "음식점업"),
     })
 
-    assert SaraminLookup(fetch=fetch, sleep=lambda s: None).search("kfC") == []
+    assert SaraminLookup(fetch=fetch, sleep=lambda s: None).search("lmb") == []
 
 
 def test_lookup_returns_empty_on_network_error():
     fetch = FakeFetch({"searchword=": urllib.error.URLError("offline")})
 
-    assert SaraminLookup(fetch=fetch, sleep=lambda s: None).search("발렌라이프") == []
+    assert SaraminLookup(fetch=fetch, sleep=lambda s: None).search("가나다랩") == []
 
 
 def test_exact_match_handles_corp_marks_and_parentheses():
-    candidates = [SaraminCompany("(주)엘티엔터테인먼트", "중견기업"), SaraminCompany("(주)피츠", "중소기업")]
+    candidates = [SaraminCompany("(주)엉뚱한회사", "중견기업"), SaraminCompany("(주)가나", "중소기업")]
 
-    assert exact_match("피츠 (블랑네이처)", candidates).name == "(주)피츠"
-    assert exact_match("snow", [SaraminCompany("스노우(주)", "대기업")]) is None  # 영문·한글이 다르면 AI 가 판단
+    assert exact_match("가나 (라마바)", candidates).name == "(주)가나"
+    assert exact_match("abc", [SaraminCompany("에이비씨(주)", "대기업")]) is None  # 영문·한글이 다르면 AI 가 판단

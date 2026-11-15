@@ -18,7 +18,7 @@ class FakeClassifier:
 
 
 def make_tracker(values, config, cache_rows=None):
-    sheets = {"지원현황": values}
+    sheets = {"지원기록": values}
     if cache_rows is not None:
         sheets["기업정보"] = [CACHE_HEADER] + cache_rows
     fake = FakeSheets(sheets)
@@ -26,7 +26,7 @@ def make_tracker(values, config, cache_rows=None):
 
 
 def size_column(fake):
-    return fake.sheets["지원현황"][0].index("기업규모")
+    return fake.sheets["지원기록"][0].index("기업규모")
 
 
 def test_fill_creates_size_column_and_searches_each_company_once(sample_values, config):
@@ -36,7 +36,7 @@ def test_fill_creates_size_column_and_searches_each_company_once(sample_values, 
     report = tracker.fill_sizes(classifier)
 
     col = size_column(fake)
-    sizes = [row[col] for row in fake.sheets["지원현황"][1:5]]
+    sizes = [row[col] for row in fake.sheets["지원기록"][1:5]]
     assert sizes == ["중소기업", "대기업", "알수없음", "중소기업"]
     assert report.filled == 4 and report.searched == 3
     assert [c[0] for c in classifier.calls] == ["가나다랩", "라마바전자", "사아자커머스"]  # 가나다랩은 한 번만
@@ -52,7 +52,7 @@ def test_fill_uses_cache_sheet_first(sample_values, config):
 
     assert classifier.calls == []
     assert report.searched == 0 and report.filled == 4
-    assert fake.sheets["지원현황"][1][size_column(fake)] == "중견기업"
+    assert fake.sheets["지원기록"][1][size_column(fake)] == "중견기업"
 
 
 def test_fill_without_classifier_only_uses_cache(sample_values, config):
@@ -71,7 +71,7 @@ def test_fill_skips_rows_that_already_have_size(config):
     report = tracker.fill_sizes(classifier)
 
     assert classifier.calls == [("라마바전자", "")]
-    assert fake.sheets["지원현황"][1][2] == "대기업"
+    assert fake.sheets["지원기록"][1][2] == "대기업"
     assert report.filled == 1
 
 
@@ -107,10 +107,10 @@ def test_finds_record_tab_by_header(sample_values, config):
 
 
 def test_ignores_wrong_tab_name_in_config(sample_values, config):
-    config["data_sheet"] = "취준기록"  # 시트 제목을 탭 이름으로 잘못 넣은 경우
+    config["data_sheet"] = "내 취준 시트"  # 시트 제목을 탭 이름으로 잘못 넣은 경우
     tracker, _ = make_tracker(sample_values, config)
 
-    assert tracker.data_sheet() == "지원현황"
+    assert tracker.data_sheet() == "지원기록"
 
 
 def test_no_record_tab_lists_real_tabs(config):
