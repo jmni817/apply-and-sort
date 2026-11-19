@@ -25,6 +25,21 @@ columns:
   employment: 고용형태
   document: 서류
   size: 기업규모
+  # 전형 열 (서류 다음 단계). 시트에 없는 열은 '시트에 열 없음'으로만 표시해요.
+  aptitude: 인적성/AI/과제
+  interview1: 1차면접
+  interview2: 2차면접
+  final: 최종 결과
+
+# 전형 칸 값 판정 키워드. 공백을 빼고 '포함' 여부로 비교하고, 위 항목부터 먼저 맞는 것으로 정해요.
+# (not_applicable 은 칸 값과 정확히 같을 때만) 어디에도 안 맞는 값은 '대기'로 봐요.
+# 빈칸은 뒤 전형에 기록이 있으면 '해당없음', 없으면 '미진행'으로 셉니다.
+stage_values:
+  not_applicable: ["-", "해당없음", "없음", "N/A"]
+  fail: ["불합격", "탈락"]
+  dropped: ["포기", "불참", "미응시"]
+  pending: ["예비", "대기", "진행", "보류"]
+  pass: ["합격", "통과"]
 
 # AI로 기업규모 채우기 (필수). OpenAI 호환(Chat Completions) API 면 어디든 됩니다.
 llm:

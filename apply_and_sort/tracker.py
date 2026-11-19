@@ -62,10 +62,10 @@ class Tracker:
         return self._data_sheet
 
     def load(self) -> list[Application]:
-        return parse_applications(self.sheets.read_values(self.data_sheet()), self.columns)
+        return parse_applications(self.sheets.read_values(self.data_sheet()), self.columns, self.config.get("stage_values"))
 
     def summary(self) -> dict:
-        return summarize(self.load())
+        return summarize(self.load(), self.columns)
 
     def read_cache(self) -> dict[str, CompanyInfo]:
         """기업정보 시트의 {정규화한 회사명: 정보}. 같은 회사가 여러 번 있으면 아래 행이 우선."""

@@ -31,6 +31,20 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "employment": "고용형태",
         "document": "서류",
         "size": "기업규모",
+        # 전형 열 (서류 다음 단계들). 시트에 없는 열은 '열 없음'으로 표시만 한다.
+        "aptitude": "인적성/AI/과제",
+        "interview1": "1차면접",
+        "interview2": "2차면접",
+        "final": "최종 결과",
+    },
+    # 전형 칸 값 판정 키워드. 공백을 빼고 '포함' 여부로 비교하며, 위 항목부터 먼저 맞는 것으로 정한다.
+    # (not_applicable 은 칸 값과 정확히 같을 때만) 어디에도 안 맞는 값은 '대기'로 본다.
+    "stage_values": {
+        "not_applicable": ["-", "해당없음", "없음", "N/A"],
+        "fail": ["불합격", "탈락"],
+        "dropped": ["포기", "불참", "미응시"],
+        "pending": ["예비", "대기", "진행", "보류"],
+        "pass": ["합격", "통과"],
     },
     # OpenAI 호환(Chat Completions) API. 처음 설정에서 꼭 연결해야 한다.
     "llm": {

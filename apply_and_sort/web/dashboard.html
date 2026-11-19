@@ -67,6 +67,16 @@
   .log { font: 12px/1.5 ui-monospace, Consolas, monospace; color: var(--muted); max-height: 120px; overflow: auto;
          white-space: pre-wrap; margin-top: 8px; }
   .section-title { font-size: 19px; margin: 24px 0 12px; }
+  .flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
+  .stage { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; min-width: 0; }
+  .stage:not(:last-child)::after { content: "→"; position: absolute; right: -13px; top: 50%; transform: translateY(-50%);
+                                   color: var(--muted); font-weight: 700; }
+  .stage .s-title { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .stage .s-rate { font-size: 24px; font-weight: 700; margin: 2px 0; font-variant-numeric: tabular-nums; }
+  .stage .s-rate.has { color: var(--accent); }
+  .stage .s-count { font-size: 13px; }
+  .stage .s-extra { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.6; }
+  .stage.missing { opacity: .55; }
   .groups { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
   .grow { display: grid; grid-template-columns: minmax(80px, 34%) 1fr 92px; gap: 10px; align-items: center;
           padding: 7px 0; border-top: 1px solid var(--line); }
@@ -79,6 +89,8 @@
   .gnum small { display: block; color: var(--muted); font-size: 12px; }
   .empty { color: var(--muted); padding: 24px 0; text-align: center; }
   @media (max-width: 760px) {
+    .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .stage::after { display: none; }
     .kpis { grid-template-columns: repeat(2, 1fr); }
     .groups { grid-template-columns: 1fr; }
   }
@@ -185,6 +197,10 @@
       <div class="msg" id="job-result"></div>
       <div class="log" id="job-log"></div>
     </div>
+    <h2 class="section-title">🧭 전형별 합격률</h2>
+    <div class="muted" style="margin:-6px 0 12px">각 전형에서 결과가 나온 건(합격+불합격) 중 합격한 비율이에요. 대기·포기·해당없음·미진행은 합격률에서 빼요.</div>
+    <div class="flow" id="flow"></div>
+
     <h2 class="section-title">💡 내 서류합격률 분석</h2>
     <div class="groups" id="groups"></div>
   </main>
@@ -286,6 +302,8 @@ function renderSummary(d) {
   $("notice").hidden = !d.unclassified;
   $("notice-text").textContent = `기업규모가 비어 있는 행이 ${d.unclassified}개 있어요. 버튼을 누르면 AI가 찾아 채워요.`;
 
+  renderStages(d.stages || []);
+
   const box = $("groups");
   box.replaceChildren();
   for (const g of d.groups) {
@@ -324,6 +342,28 @@ function renderSummary(d) {
       card.append(row);
     }
     box.append(card);
+  }
+}
+
+// 전형별 합격률: 서류 → 인적성/AI/과제 → 1차면접 → 2차면접 → 최종 결과
+function renderStages(stages) {
+  const flow = $("flow");
+  flow.replaceChildren();
+  const div = (cls, text) => { const el = document.createElement("div"); el.className = cls; el.textContent = text; return el; };
+  for (const s of stages) {
+    const card = div("stage" + (s.column_missing ? " missing" : ""), "");
+    card.append(div("s-title", s.title));
+    card.title = s.title;
+    if (s.column_missing) {
+      card.append(div("s-rate", "-"), div("s-count", "시트에 열 없음"));
+    } else {
+      card.append(div("s-rate" + (s.rate == null ? "" : " has"), pct(s.rate)));
+      card.append(div("s-count", s.decided ? `합격 ${s.passed} / 확정 ${s.decided}` : "아직 확정된 결과 없음"));
+      const extra = [["pending", "대기"], ["dropped", "포기"], ["skipped", "해당없음"], ["not_reached", "미진행"]]
+        .filter(([k]) => s[k]).map(([k, label]) => `${label} ${s[k]}`);
+      card.append(div("s-extra", extra.join(" · ") || " "));
+    }
+    flow.append(card);
   }
 }
 
