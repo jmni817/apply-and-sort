@@ -14,7 +14,9 @@
     --green: #1f6b43; --green-soft: #e4efe6; --on-green: #ffffff;
     --amber: #7d5200; --amber-soft: #f8edd3;
     --red: #b3261e; --track: #e8e8e0;
-    --fig: ui-monospace, "Cascadia Mono", "D2Coding", Consolas, monospace;
+    /* 숫자도 본문과 같은 기본 글씨체. 자릿수만 tabular-nums 로 맞춘다 */
+    --fig: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+    --mono: ui-monospace, Consolas, monospace;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -54,7 +56,7 @@
     border: 1px solid var(--rule-mid); background: var(--sheet); color: var(--ink); }
   input:focus-visible { outline-offset: 0; border-color: var(--green); }
   input[type=file] { font: inherit; font-size: 14px; max-width: 100%; color: var(--muted); }
-  code { font: 12px var(--fig); background: var(--track); padding: 1px 4px; border-radius: 2px; }
+  code { font: 12px var(--mono); background: var(--track); padding: 1px 4px; border-radius: 2px; }
   .muted { color: var(--muted); font-size: 13px; }
 
   /* 처음 설정: 번호 매긴 장부 줄 */
@@ -62,7 +64,7 @@
   .setup-head h2 { font-size: 16px; margin: 0; }
   .steps { border-top: 1px solid var(--ink); }
   .step { display: grid; grid-template-columns: 44px 1fr; gap: 0 12px; padding: 16px 0; border-bottom: 1px solid var(--rule); }
-  .num { font: 600 13px/1.9 var(--fig); color: var(--muted); }
+  .num { font: 700 13px/1.9 var(--fig); font-variant-numeric: tabular-nums; color: var(--muted); }
   .step.done .num { color: var(--green); }
   .step-title { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-weight: 600; }
   .chip { font: 400 12px var(--fig); color: var(--muted); }
@@ -85,7 +87,7 @@
           border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink); margin-bottom: 20px; }
   .kpi { background: var(--paper); padding: 12px 14px 14px; min-width: 0; }
   .kpi .label { color: var(--muted); font-size: 13px; }
-  .kpi .value { font: 600 30px/1.2 var(--fig); margin-top: 4px; text-align: right; font-variant-numeric: tabular-nums; }
+  .kpi .value { font: 700 30px/1.2 var(--fig); margin-top: 4px; text-align: right; font-variant-numeric: tabular-nums; }
   .kpi.hero { background: var(--green-soft); }
   .kpi.hero .value { color: var(--green); }
 
@@ -93,7 +95,7 @@
             padding: 10px 14px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
   .notice span { flex: 1 1 260px; }
   .panel { border-left: 3px solid var(--rule-mid); padding: 8px 14px; margin-bottom: 20px; }
-  .log { font: 12px/1.5 var(--fig); color: var(--muted); max-height: 140px; overflow: auto; white-space: pre-wrap; margin-top: 6px; }
+  .log { font: 12px/1.5 var(--mono); color: var(--muted); max-height: 140px; overflow: auto; white-space: pre-wrap; margin-top: 6px; }
 
   /* 섹션 머리: 굵은 괘선 위 제목 */
   .section-title { font-size: 16px; margin: 32px 0 4px; padding-bottom: 6px; border-bottom: 1px solid var(--ink); }
@@ -149,6 +151,25 @@
     .kpi .value { font-size: 24px; }
     .step { grid-template-columns: 32px 1fr; }
   }
+
+  /* 새 버전 안내 팝업 */
+  dialog.upd { border: 1px solid var(--ink); border-radius: 3px; padding: 0; background: var(--paper); color: var(--ink);
+               width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 32px); }
+  dialog.upd::backdrop { background: rgba(10, 14, 12, .5); }
+  .upd-step { padding: 20px 22px 18px; }
+  .upd h2 { font-size: 17px; line-height: 1.45; margin: 0 0 10px; padding-bottom: 10px; border-bottom: 3px double var(--ink); }
+  .upd p { margin: 8px 0; font-size: 14px; }
+  .upd-ver { font-family: var(--fig); font-size: 14px; }
+  .upd-ver b { color: var(--green); }
+  .upd-label { font-size: 12px; color: var(--muted); margin-top: 14px; }
+  .upd-notes { white-space: pre-wrap; font-size: 13px; line-height: 1.6; max-height: 38vh; overflow: auto;
+               border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: 8px 0; margin-top: 4px; }
+  .upd code { word-break: break-all; }
+  .upd-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 18px; }
+  .upd-progress { height: 8px; background: var(--track); margin: 14px 0 8px; }
+  .upd-progress i { display: block; height: 100%; width: 0; background: var(--green); transition: width .3s; }
+  .upd-text { font-size: 14px; font-variant-numeric: tabular-nums; }
+  .upd-text.err { color: var(--red); }
 </style>
 </head>
 <body>
@@ -272,6 +293,39 @@
     <div class="groups" id="groups"></div>
   </main>
   <div class="msg err" id="msg-dash" role="alert"></div>
+
+  <dialog class="upd" id="upd" aria-labelledby="upd-title">
+    <div class="upd-step" id="upd-1">
+      <h2 id="upd-title">새로운 기능을 추가하고, 버그를 고쳐 업데이트됐어요!</h2>
+      <p class="upd-ver">지금 버전 <span id="upd-cur"></span> → 새 버전 <b id="upd-new"></b></p>
+      <div class="upd-label">바뀐 내용</div>
+      <div class="upd-notes" id="upd-notes"></div>
+      <div class="upd-actions">
+        <button class="primary" id="upd-go" type="button"></button>
+        <a class="btn primary" id="upd-page" target="_blank" rel="noopener" hidden></a>
+        <button id="upd-later" type="button">나중에</button>
+      </div>
+    </div>
+    <div class="upd-step" id="upd-2" hidden>
+      <h2>기존 exe 삭제 안내</h2>
+      <p>새 버전은 <code id="upd-file"></code> 이름으로 지금 exe 옆에 저장돼요. (그 폴더에 쓸 수 없으면 다운로드 폴더에)</p>
+      <p>새 버전이 열리면 기존 파일은 지워 주세요.<br><code id="upd-old"></code></p>
+      <p class="muted">등록한 키·설정·로그인 정보는 그대로 이어져요.</p>
+      <div class="upd-actions">
+        <button class="primary" id="upd-ok" type="button">확인</button>
+        <button id="upd-back" type="button">뒤로</button>
+      </div>
+    </div>
+    <div class="upd-step" id="upd-3" hidden>
+      <h2>새 버전 받기</h2>
+      <div class="upd-progress" id="upd-bar" role="progressbar" aria-label="다운로드 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>
+      <div class="upd-text" id="upd-text" role="status"></div>
+      <div class="upd-actions" id="upd-fail" hidden>
+        <button class="primary" id="upd-retry" type="button">다시 시도</button>
+        <a class="btn" id="upd-page2" target="_blank" rel="noopener">릴리스 페이지 열기</a>
+      </div>
+    </div>
+  </dialog>
 </div>
 
 <script>
@@ -318,6 +372,7 @@ function ready(s) { return missingSteps(s).length === 0; }
 
 function renderStatus(s) {
   status = s;
+  renderUpdate(s.update);
   $("ver").textContent = "v" + s.version;
   chip("chip-cred", s.credentials, "등록됨", "미등록");
   chip("chip-conn", s.connected, "연결됨", s.oauth.running ? "로그인 대기 중..." : "연결 안 됨");
@@ -554,6 +609,107 @@ $("quit").addEventListener("click", async () => {
   document.body.innerHTML = '<div class="wrap"><p>종료했어요. 이 창을 닫아도 돼요.</p></div>';
 });
 
+// ---- 새 버전 안내 팝업 (1 안내 → 2 기존 exe 삭제 안내 → 3 진행)
+const UPDATE_STARTED = Date.now();
+let updDismissed = false;  // [나중에]를 누르면 이번 실행 동안 다시 띄우지 않음
+let updStep = 0;
+let updInfo = null;
+
+function mb(n) { return (n / 1048576).toFixed(1); }
+
+function showUpdStep(n) {
+  updStep = n;
+  for (const i of [1, 2, 3]) $("upd-" + i).hidden = i !== n;
+  const dlg = $("upd");
+  if (!dlg.open) { try { dlg.showModal(); } catch { dlg.setAttribute("open", ""); } }
+  const first = { 1: "upd-go", 2: "upd-ok", 3: null }[n];
+  if (first) { const el = $(first).hidden ? $("upd-page") : $(first); el.focus(); }
+}
+
+function closeUpd() {
+  updDismissed = true;
+  updStep = 0;
+  const dlg = $("upd");
+  if (dlg.open) dlg.close();
+}
+
+function renderUpdate(u) {
+  if (!u) return;
+  updInfo = u;
+  const d = u.download || {};
+  const busy = d.state === "downloading" || d.state === "done";
+  if (busy || (d.state === "error" && updStep === 3)) {
+    if (updStep !== 3) showUpdStep(3);
+    renderUpdProgress(u, d);
+    return;
+  }
+  if (updStep === 0 && !updDismissed) {
+    $("upd-cur").textContent = "v" + (status ? status.version : "");
+    $("upd-new").textContent = "v" + u.version;
+    $("upd-notes").textContent = u.notes || "(바뀐 내용 안내가 없어요)";
+    $("upd-go").textContent = `v${u.version} 다운로드하기`;
+    $("upd-page").textContent = `v${u.version} 다운로드하기`;
+    $("upd-page").href = u.page_url;
+    $("upd-page2").href = u.page_url;
+    $("upd-go").hidden = !u.can_install;  // exe 가 아니면 릴리스 페이지를 기본 브라우저로 연다
+    $("upd-page").hidden = u.can_install;
+    $("upd-file").textContent = u.file_name;
+    $("upd-old").textContent = u.current_exe;
+    showUpdStep(1);
+  }
+}
+
+function renderUpdProgress(u, d) {
+  const total = d.total || 0;
+  const p = total ? Math.min(100, Math.floor(d.done / total * 100)) : 0;
+  const bar = $("upd-bar");
+  bar.firstElementChild.style.width = (d.state === "done" ? 100 : p) + "%";
+  bar.setAttribute("aria-valuenow", String(d.state === "done" ? 100 : p));
+  $("upd-fail").hidden = d.state !== "error";
+  $("upd-text").classList.toggle("err", d.state === "error");
+  if (d.state === "done") $("upd-text").textContent = "설치 완료! 새 버전을 실행할게요. 이 창은 곧 닫혀요.";
+  else if (d.state === "error") $("upd-text").textContent = d.error || "다운로드하지 못했어요.";
+  else $("upd-text").textContent = `새 버전을 받는 중이에요... ${p}% (${mb(d.done || 0)} / ${mb(total)} MB)`;
+}
+
+async function startUpdDownload() {
+  showUpdStep(3);
+  renderUpdProgress(updInfo, { state: "downloading", done: 0, total: 0 });
+  try { await api("/api/update/download", {}); }
+  catch (e) { renderUpdProgress(updInfo, { state: "error", error: e.message }); return; }
+  pollUpdate();
+}
+
+let updTimer = null;
+async function pollUpdate() {
+  clearTimeout(updTimer);
+  let state = "";
+  try {
+    const s = await api("/api/status");
+    status = s;
+    renderUpdate(s.update);
+    state = s.update ? s.update.download.state : "";
+  } catch { /* 새 버전 실행 뒤 이 프로그램이 닫히는 중이면 응답이 없음 */ }
+  if (state === "done") return;  // 곧 새 버전이 열리고 이 창은 닫힌다
+  // 받는 동안 0.8초, 켠 직후 30초는 3초(첫 확인 결과를 빨리 보여 주려고), 그 뒤엔 1분마다
+  const delay = state === "downloading" ? 800 : Date.now() - UPDATE_STARTED < 30000 ? 3000 : 60000;
+  updTimer = setTimeout(pollUpdate, delay);
+}
+
+$("upd-go").addEventListener("click", () => showUpdStep(2));
+$("upd-page").addEventListener("click", closeUpd);
+$("upd-later").addEventListener("click", closeUpd);
+$("upd-back").addEventListener("click", () => showUpdStep(1));
+$("upd-ok").addEventListener("click", startUpdDownload);
+$("upd-retry").addEventListener("click", startUpdDownload);
+$("upd").addEventListener("cancel", (ev) => {
+  // Esc: 받는 중·완료 후에는 닫지 않고, 그 외에는 [나중에]와 같다
+  const d = (updInfo && updInfo.download) || {};
+  if (updStep === 3 && d.state !== "error") { ev.preventDefault(); return; }
+  ev.preventDefault();
+  closeUpd();
+});
+
 (async () => {
   if (location.protocol === "file:") {
     document.body.innerHTML = '<div class="wrap"><p>이 파일을 직접 열면 동작하지 않아요. 터미널에서 <code>apply-and-sort</code> 를 실행해 열린 창(127.0.0.1 주소)을 써 주세요.</p></div>';
@@ -561,6 +717,7 @@ $("quit").addEventListener("click", async () => {
   }
   await refreshStatus();
   if (ready(status)) refreshSummary();
+  setTimeout(pollUpdate, 3000);
 })();
 </script>
 </body>

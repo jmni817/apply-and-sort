@@ -164,6 +164,8 @@
 
 설정과 키는 `%APPDATA%\apply-and-sort\` 폴더에 저장됩니다.
 
+**업데이트**: 새 버전이 나오면 프로그램을 켤 때 팝업으로 알려 줘요. **[다운로드하기] → [확인]** 을 누르면 새 exe를 지금 exe 옆에 받아 바로 실행합니다. 새 버전이 열리면 기존 exe는 지워 주세요. 설정·키·로그인은 그대로 이어집니다.
+
 <br>
 
 ---
@@ -245,6 +247,7 @@ AI API 키는 대시보드에서 등록하거나, 환경변수 `APPLY_AND_SORT_L
 - 대시보드는 이 PC(`127.0.0.1`)에서만 열리고, 실행할 때마다 새로 만든 접속 토큰이 있어야 쓸 수 있습니다.
 - Google 토큰과 AI API 키는 설정 파일 옆의 파일에만 저장되며, 화면에는 등록 여부만 표시됩니다.
 - `credentials.json`, `token.json`, `config.yaml`, `llm_api_key.txt`는 `.gitignore`에 들어 있어 커밋되지 않습니다.
+- 새 버전 확인은 GitHub 공개 API를 인증 없이 조회하며 `apply-and-sort/<버전>` 외에는 아무 정보도 보내지 않습니다. 새 exe는 github.com 계열 https 주소에서만 받고, 크기가 릴리스 정보와 같을 때만 저장합니다.
 
 <br>
 
@@ -262,6 +265,7 @@ apply_and_sort/
   company.py        기업규모 분류 (사람인 조회 결과 + OpenAI 호환 AI)
   saramin.py        사람인 기업정보 조회 (기업형태·업종)
   tracker.py        읽기 → 분류 → 쓰기 흐름
+  updates.py        새 버전 확인 · exe 다운로드 (GitHub 릴리스)
   web/dashboard.html
 tests/              pytest (시트·AI 는 가짜 객체로 대체)
 packaging/          PyInstaller 설정

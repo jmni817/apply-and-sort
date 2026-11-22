@@ -26,6 +26,7 @@ from .config import ConfigError, default_config, extract_spreadsheet_id, load_co
 from .records import SheetFormatError
 from .sheets_client import AuthError, SheetsApiError, SheetsClient, load_credentials, save_private_file, validate_client_secrets
 from .tracker import Tracker
+from .updates import Updater
 
 log = logging.getLogger(__name__)
 
@@ -55,8 +56,10 @@ class _LinkCaptureBrowser(webbrowser.BaseBrowser):
 
 
 class DashboardState:
-    def __init__(self, config_path: str | Path):
+    def __init__(self, config_path: str | Path, updater: Updater | None = None):
         self.config_path = Path(config_path)
+        # 새 버전 확인은 serve() 에서 시작한다. (테스트에서 만들 때는 네트워크를 쓰지 않음)
+        self.updater = updater or Updater(checker=lambda current: None)
         self._lock = threading.Lock()
         self.oauth = {"running": False, "error": "", "auth_url": ""}
         self._browser_name = f"apply-and-sort-login-{id(self)}"
@@ -90,6 +93,7 @@ class DashboardState:
             "spreadsheet_url": config.get("spreadsheet_url", ""),
             "llm": self.llm_status(config),
             "oauth": dict(self.oauth),
+            "update": self.updater.status(),  # 새 버전이 없거나 확인 전이면 None
         }
 
     def llm_status(self, config: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -356,6 +360,8 @@ def _make_handler(state: DashboardState, access_token: str, allowed_hosts: set[s
                     state.disconnect()
                 elif path == "/api/classify":
                     state.start_classify()
+                elif path == "/api/update/download":
+                    state.updater.start_download()
                 elif path == "/api/quit":
                     self._json(HTTPStatus.OK, {"ok": True})
                     stop.set()
@@ -370,9 +376,11 @@ def _make_handler(state: DashboardState, access_token: str, allowed_hosts: set[s
 
 
 def serve(config_path: str | Path, *, port: int = 8766, open_browser: bool = True, window: bool = False) -> None:
-    state = DashboardState(config_path)
-    access_token = secrets.token_urlsafe(32)
     stop = threading.Event()
+    # 새 exe 를 실행하고 나면 stop 을 걸어 지금 프로그램(창)을 닫는다
+    state = DashboardState(config_path, Updater(on_exit=stop.set))
+    state.updater.start_checks()  # 켤 때 한 번 + 12시간마다 (백그라운드)
+    access_token = secrets.token_urlsafe(32)
     try:
         httpd = ThreadingHTTPServer(("127.0.0.1", port), None)
     except OSError:  # 포트가 사용 중이면 아무 빈 포트
@@ -395,6 +403,7 @@ def serve(config_path: str | Path, *, port: int = 8766, open_browser: bool = Tru
     except KeyboardInterrupt:
         pass
     finally:
+        state.updater.stop()
         httpd.shutdown()
 
 
