@@ -1,20 +1,20 @@
-<p align="center"><img src="assets/icon.png" alt="apply-and-sort 키위 캐릭터" width="180"></p>
+<p align="center"><img src="assets/icon.png" alt="apply-and-sort 딸기 피자 아이콘" width="180"></p>
 
-<h1 align="center">🥝 apply-and-sort</h1>
+<h1 align="center">🍕 apply-and-sort</h1>
 
 <p align="center">
-  <a href="https://github.com/jmni817/apply-and-sort/releases/latest"><img src="https://img.shields.io/github/downloads/jmni817/apply-and-sort/total?label=%EB%8B%A4%EC%9A%B4%EB%A1%9C%EB%93%9C&color=5fae4f" alt="총 다운로드 수"></a>
-  <a href="https://github.com/jmni817/apply-and-sort/releases/latest"><img src="https://img.shields.io/github/v/release/jmni817/apply-and-sort?label=%EC%B5%9C%EC%8B%A0%20%EB%B2%84%EC%A0%84&color=2f8f5b" alt="최신 버전"></a>
+  <a href="https://github.com/jmni817/apply-and-sort/releases/latest"><img src="https://img.shields.io/github/downloads/jmni817/apply-and-sort/total?label=%EB%8B%A4%EC%9A%B4%EB%A1%9C%EB%93%9C&color=e86a92" alt="총 다운로드 수"></a>
+  <a href="https://github.com/jmni817/apply-and-sort/releases/latest"><img src="https://img.shields.io/github/v/release/jmni817/apply-and-sort?label=%EC%B5%9C%EC%8B%A0%20%EB%B2%84%EC%A0%84&color=b02e5c" alt="최신 버전"></a>
   <a href="https://github.com/jmni817/apply-and-sort/actions/workflows/test.yml"><img src="https://github.com/jmni817/apply-and-sort/actions/workflows/test.yml/badge.svg" alt="테스트"></a>
 </p>
 
 <p align="center">
-  <b>"키위 하나 먹는 동안, 흩어져 있던 취업준비 기록 정리 완료!"</b><br>
-  A fresh & simple open-source dashboard that turns your job-application Google Sheet into pass-rate insights.
+  <b>"피자 한 조각 먹는 동안, 흩어져 있던 취업준비 기록 정리 완료!"</b><br>
+  A sweet & simple open-source dashboard that turns your job-application Google Sheet into pass-rate insights.
 </p>
 
 <p align="center">
-  <a href="https://github.com/jmni817/apply-and-sort/releases/latest"><b>🥝 Windows용 exe 다운로드</b></a>
+  <a href="https://github.com/jmni817/apply-and-sort/releases/latest"><b>🍕 Windows용 exe 다운로드</b></a>
 </p>
 
 ---
@@ -27,7 +27,7 @@
 
 <br>
 
-## 🥝 목차
+## 🍕 목차
 
 1. [무엇을 해주나요?](#-무엇을-해주나요)
 2. [AI로 기업규모 자동 분석하기](#-ai로-기업규모-자동-분석하기)
@@ -43,7 +43,7 @@
 
 ---
 
-## 🥝 무엇을 해주나요?
+## 🍕 무엇을 해주나요?
 
 구글 시트에 차곡차곡 쌓아 둔 지원 기록을 읽어서, **어디서 붙고 어디서 떨어지는지** 한 화면에 보여 줍니다.
 
@@ -91,7 +91,7 @@
 ### 기업 규모는 직접 찾기 귀찮습니다
 
 "대기업 위주로 쓸까, 중견도 넣을까?"를 판단하려면 지원한 회사마다 규모를 알아야 합니다.
-그런데 40곳 넘는 회사를 하나하나 사람인에 검색하는 건 키위 열 개를 먹어도 안 끝나요.
+그런데 40곳 넘는 회사를 하나하나 사람인에 검색하는 건 피자 한 판을 다 먹어도 안 끝나요.
 
 ### 회사명만 적어 두면 사람인 + AI가 찾아 채웁니다
 
@@ -136,7 +136,7 @@
 
 ---
 
-## 💚 왜 만들었나요?
+## 💗 왜 만들었나요?
 
 취업 준비를 하면서 지원 기록을 구글 시트에 쌓았는데, "간편지원이 더 잘 붙나?", "대기업은 나한테 무리인가?" 같은 질문에 감으로만 답하고 있었습니다.
 

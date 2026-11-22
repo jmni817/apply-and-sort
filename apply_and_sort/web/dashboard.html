@@ -7,24 +7,27 @@
 <meta name="aas-token" content="">
 <link rel="icon" href="/icon.png">
 <style>
-  /* 기록장부형: 카드 대신 괘선, 숫자는 고정폭 오른쪽 정렬, 색은 상태를 말할 때만 쓴다 */
+  /* 기록장부형: 카드 대신 괘선, 숫자는 오른쪽 정렬, 색은 상태를 말할 때만 쓴다 */
   :root {
-    --paper: #faf9f5; --sheet: #ffffff; --ink: #1b221e; --muted: #5c665f;
-    --rule: #dcdcd2; --rule-mid: #b9bcb1;
-    --green: #1f6b43; --green-soft: #e4efe6; --on-green: #ffffff;
-    --amber: #7d5200; --amber-soft: #f8edd3;
-    --red: #b3261e; --track: #e8e8e0;
+    /* 딸기 피자 아이콘에서 뽑은 색: 라즈베리 테두리 · 크림 치즈 · 연분홍 도우 */
+    --paper: #fdf8f6; --sheet: #ffffff; --ink: #2b1c21; --muted: #6e5960;
+    --rule: #efdfe0; --rule-mid: #d2b7bd;
+    --accent: #b02e5c; --accent-soft: #fce6ec; --on-accent: #ffffff;
+    --amber: #7a4f00; --amber-soft: #fdf1d8;
+    --red: #a3271f; --track: #f3e6e8;
+    --backdrop: rgba(43, 16, 26, .45);
     /* 숫자도 본문과 같은 기본 글씨체. 자릿수만 tabular-nums 로 맞춘다 */
     --fig: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
     --mono: ui-monospace, Consolas, monospace;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --paper: #121513; --sheet: #191d1a; --ink: #e7ebe8; --muted: #9ba79f;
-      --rule: #2b322e; --rule-mid: #46504a;
-      --green: #74c995; --green-soft: #1b3125; --on-green: #0d1a12;
-      --amber: #e6b960; --amber-soft: #2e2716;
-      --red: #f08a80; --track: #262c28;
+      --paper: #171012; --sheet: #20171a; --ink: #f3e8eb; --muted: #b39ca3;
+      --rule: #33262a; --rule-mid: #554247;
+      --accent: #f48fb1; --accent-soft: #3b1d28; --on-accent: #2b0b17;
+      --amber: #e9bd6b; --amber-soft: #2f2516;
+      --red: #ff8f86; --track: #2c2124;
+      --backdrop: rgba(0, 0, 0, .6);
     }
   }
   * { box-sizing: border-box; }
@@ -33,7 +36,7 @@
          font: 15px/1.6 "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif; }
   .wrap { max-width: 1040px; margin: 0 auto; padding: 20px 16px 72px; }
   a { color: inherit; }
-  :focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   /* 머리글: 장부 첫 장처럼 겹줄로 마감 */
   header { display: flex; align-items: center; gap: 10px; padding-bottom: 12px; margin-bottom: 24px;
@@ -47,14 +50,14 @@
                  border: 1px solid var(--rule-mid); background: var(--sheet); color: var(--ink);
                  border-radius: 3px; padding: 6px 13px; cursor: pointer; white-space: nowrap; line-height: 1.5; }
   button:hover, .btn:hover { border-color: var(--ink); }
-  button.primary, .btn.primary { background: var(--green); border-color: var(--green); color: var(--on-green); font-weight: 600; }
+  button.primary, .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
   button.primary:hover, .btn.primary:hover { filter: brightness(1.08); }
   button:disabled, button:disabled:hover { background: var(--track); border-color: var(--rule); color: var(--muted);
                                            cursor: not-allowed; filter: none; font-weight: 400; }
   input[type=text], input[type=password], input[type=url] {
     font: inherit; font-size: 14px; width: 100%; padding: 7px 9px; border-radius: 2px;
     border: 1px solid var(--rule-mid); background: var(--sheet); color: var(--ink); }
-  input:focus-visible { outline-offset: 0; border-color: var(--green); }
+  input:focus-visible { outline-offset: 0; border-color: var(--accent); }
   input[type=file] { font: inherit; font-size: 14px; max-width: 100%; color: var(--muted); }
   code { font: 12px var(--mono); background: var(--track); padding: 1px 4px; border-radius: 2px; }
   .muted { color: var(--muted); font-size: 13px; }
@@ -65,12 +68,12 @@
   .steps { border-top: 1px solid var(--ink); }
   .step { display: grid; grid-template-columns: 44px 1fr; gap: 0 12px; padding: 16px 0; border-bottom: 1px solid var(--rule); }
   .num { font: 700 13px/1.9 var(--fig); font-variant-numeric: tabular-nums; color: var(--muted); }
-  .step.done .num { color: var(--green); }
+  .step.done .num { color: var(--accent); }
   .step-title { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-weight: 600; }
   .chip { font: 400 12px var(--fig); color: var(--muted); }
   .chip::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 5px; vertical-align: 1px;
                   border: 1px solid currentColor; border-radius: 50%; }
-  .chip.ok { color: var(--green); }
+  .chip.ok { color: var(--accent); }
   .chip.ok::before { background: currentColor; }
   .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
   .row > input { flex: 1 1 260px; min-width: 0; }
@@ -88,8 +91,8 @@
   .kpi { background: var(--paper); padding: 12px 14px 14px; min-width: 0; }
   .kpi .label { color: var(--muted); font-size: 13px; }
   .kpi .value { font: 700 30px/1.2 var(--fig); margin-top: 4px; text-align: right; font-variant-numeric: tabular-nums; }
-  .kpi.hero { background: var(--green-soft); }
-  .kpi.hero .value { color: var(--green); }
+  .kpi.hero { background: var(--accent-soft); }
+  .kpi.hero .value { color: var(--accent); }
 
   .notice { border-left: 3px solid var(--amber); background: var(--amber-soft); color: var(--ink);
             padding: 10px 14px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
@@ -111,13 +114,13 @@
   .ledger td.s-name { font-family: inherit; font-size: 14px; font-weight: 600; white-space: normal; }
   .ledger td.s-name .idx { font: 12px var(--fig); color: var(--muted); margin-right: 8px; font-weight: 400; }
   .ledger td.s-rate { font-size: 15px; font-weight: 600; width: 132px; }
-  .ledger td.s-rate.has { color: var(--green); }
+  .ledger td.s-rate.has { color: var(--accent); }
   .ledger td.s-note { font-family: inherit; color: var(--muted); text-align: left; white-space: normal; }
   .ledger .zero { color: var(--muted); opacity: .75; }
   .ledger tr.missing td { color: var(--muted); }
   .ledger tr.missing td.s-name { font-weight: 400; }
   .meter { display: block; height: 3px; background: var(--track); margin-top: 4px; }
-  .meter i { display: block; height: 100%; background: var(--green); }
+  .meter i { display: block; height: 100%; background: var(--accent); }
 
   /* 기준별 서류 합격률 */
   .groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 40px; }
@@ -127,7 +130,7 @@
           padding: 7px 0; border-bottom: 1px solid var(--rule); }
   .gname { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .track { height: 6px; background: var(--track); }
-  .fill { height: 100%; background: var(--green); }
+  .fill { height: 100%; background: var(--accent); }
   .gnum { text-align: right; font: 13px var(--fig); font-variant-numeric: tabular-nums; }
   .gnum b { font-size: 14px; }
   .gnum small { display: block; color: var(--muted); font-size: 11px; }
@@ -155,19 +158,19 @@
   /* 새 버전 안내 팝업 */
   dialog.upd { border: 1px solid var(--ink); border-radius: 3px; padding: 0; background: var(--paper); color: var(--ink);
                width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 32px); }
-  dialog.upd::backdrop { background: rgba(10, 14, 12, .5); }
+  dialog.upd::backdrop { background: var(--backdrop); }
   .upd-step { padding: 20px 22px 18px; }
   .upd h2 { font-size: 17px; line-height: 1.45; margin: 0 0 10px; padding-bottom: 10px; border-bottom: 3px double var(--ink); }
   .upd p { margin: 8px 0; font-size: 14px; }
   .upd-ver { font-family: var(--fig); font-size: 14px; }
-  .upd-ver b { color: var(--green); }
+  .upd-ver b { color: var(--accent); }
   .upd-label { font-size: 12px; color: var(--muted); margin-top: 14px; }
   .upd-notes { white-space: pre-wrap; font-size: 13px; line-height: 1.6; max-height: 38vh; overflow: auto;
                border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: 8px 0; margin-top: 4px; }
   .upd code { word-break: break-all; }
   .upd-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 18px; }
   .upd-progress { height: 8px; background: var(--track); margin: 14px 0 8px; }
-  .upd-progress i { display: block; height: 100%; width: 0; background: var(--green); transition: width .3s; }
+  .upd-progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .3s; }
   .upd-text { font-size: 14px; font-variant-numeric: tabular-nums; }
   .upd-text.err { color: var(--red); }
 </style>
