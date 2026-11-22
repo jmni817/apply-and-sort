@@ -7,180 +7,240 @@
 <meta name="aas-token" content="">
 <link rel="icon" href="/icon.png">
 <style>
+  /* 기록장부형: 카드 대신 괘선, 숫자는 고정폭 오른쪽 정렬, 색은 상태를 말할 때만 쓴다 */
   :root {
-    --bg: #f6f7f4; --card: #ffffff; --text: #1f2a24; --muted: #66736b; --line: #e3e7e1;
-    --accent: #2f8f5b; --accent-soft: #e3f3e9; --warn: #b7791f; --warn-soft: #fdf3dd;
-    --bad: #c0392b; --bar: #cfe9d9;
-    --s-big: #3b6fd8; --s-mid: #2f8f5b; --s-small: #d08a2a; --s-unknown: #9aa39d;
+    --paper: #faf9f5; --sheet: #ffffff; --ink: #1b221e; --muted: #5c665f;
+    --rule: #dcdcd2; --rule-mid: #b9bcb1;
+    --green: #1f6b43; --green-soft: #e4efe6; --on-green: #ffffff;
+    --amber: #7d5200; --amber-soft: #f8edd3;
+    --red: #b3261e; --track: #e8e8e0;
+    --fig: ui-monospace, "Cascadia Mono", "D2Coding", Consolas, monospace;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #141816; --card: #1c211e; --text: #e6ebe7; --muted: #9aa7a0; --line: #2c3430;
-      --accent: #5cc48b; --accent-soft: #1f3a2b; --warn: #e3b25a; --warn-soft: #3a3020;
-      --bad: #ef7b6e; --bar: #2a4a37;
+      --paper: #121513; --sheet: #191d1a; --ink: #e7ebe8; --muted: #9ba79f;
+      --rule: #2b322e; --rule-mid: #46504a;
+      --green: #74c995; --green-soft: #1b3125; --on-green: #0d1a12;
+      --amber: #e6b960; --amber-soft: #2e2716;
+      --red: #f08a80; --track: #262c28;
     }
   }
   * { box-sizing: border-box; }
-  [hidden] { display: none !important; }  /* .notice 등 display 를 지정한 요소도 hidden 이면 숨긴다 */
-  body { margin: 0; background: var(--bg); color: var(--text);
-         font: 15px/1.55 "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif; }
-  .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 16px 64px; }
-  header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
-  header h1 { font-size: 22px; margin: 0; }
-  header .ver { color: var(--muted); font-size: 13px; }
+  [hidden] { display: none !important; }  /* display 를 지정한 요소도 hidden 이면 숨긴다 */
+  body { margin: 0; background: var(--paper); color: var(--ink);
+         font: 15px/1.6 "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 20px 16px 72px; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+
+  /* 머리글: 장부 첫 장처럼 겹줄로 마감 */
+  header { display: flex; align-items: center; gap: 10px; padding-bottom: 12px; margin-bottom: 24px;
+           border-bottom: 3px double var(--ink); }
+  header h1 { font-size: 19px; margin: 0; letter-spacing: -.01em; white-space: nowrap; }
+  header .ver { color: var(--muted); font: 12px var(--fig); }
   header .spacer { flex: 1; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
-  .card h2 { font-size: 17px; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
-  button { font: inherit; border: 1px solid var(--line); background: var(--card); color: var(--text);
-           border-radius: 9px; padding: 7px 14px; cursor: pointer; white-space: nowrap; }
-  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
-  button:disabled { opacity: .55; cursor: default; }
-  select, input[type=text], input[type=password], input[type=url] {
-    font: inherit; width: 100%; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line);
-    background: var(--bg); color: var(--text); }
+
+  /* 버튼: 각진 모서리, 그림자 없음 */
+  button, .btn { font: inherit; font-size: 14px; display: inline-block; text-decoration: none;
+                 border: 1px solid var(--rule-mid); background: var(--sheet); color: var(--ink);
+                 border-radius: 3px; padding: 6px 13px; cursor: pointer; white-space: nowrap; line-height: 1.5; }
+  button:hover, .btn:hover { border-color: var(--ink); }
+  button.primary, .btn.primary { background: var(--green); border-color: var(--green); color: var(--on-green); font-weight: 600; }
+  button.primary:hover, .btn.primary:hover { filter: brightness(1.08); }
+  button:disabled, button:disabled:hover { background: var(--track); border-color: var(--rule); color: var(--muted);
+                                           cursor: not-allowed; filter: none; font-weight: 400; }
+  input[type=text], input[type=password], input[type=url] {
+    font: inherit; font-size: 14px; width: 100%; padding: 7px 9px; border-radius: 2px;
+    border: 1px solid var(--rule-mid); background: var(--sheet); color: var(--ink); }
+  input:focus-visible { outline-offset: 0; border-color: var(--green); }
+  input[type=file] { font: inherit; font-size: 14px; max-width: 100%; color: var(--muted); }
+  code { font: 12px var(--fig); background: var(--track); padding: 1px 4px; border-radius: 2px; }
   .muted { color: var(--muted); font-size: 13px; }
-  .steps { display: grid; gap: 14px; }
-  .step { display: grid; grid-template-columns: 28px 1fr; gap: 12px; align-items: start; }
-  .num { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
-         background: var(--line); font-weight: 700; font-size: 13px; }
-  .step.done .num { background: var(--accent); color: #fff; }
-  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
-  .row > input, .row > select { flex: 1 1 260px; }
-  .chip { font-size: 12px; padding: 2px 8px; border-radius: 99px; background: var(--line); color: var(--muted); }
-  .chip.ok { background: var(--accent-soft); color: var(--accent); }
+
+  /* 처음 설정: 번호 매긴 장부 줄 */
+  .setup-head { display: flex; align-items: baseline; gap: 10px; margin: 0 0 4px; }
+  .setup-head h2 { font-size: 16px; margin: 0; }
+  .steps { border-top: 1px solid var(--ink); }
+  .step { display: grid; grid-template-columns: 44px 1fr; gap: 0 12px; padding: 16px 0; border-bottom: 1px solid var(--rule); }
+  .num { font: 600 13px/1.9 var(--fig); color: var(--muted); }
+  .step.done .num { color: var(--green); }
+  .step-title { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-weight: 600; }
+  .chip { font: 400 12px var(--fig); color: var(--muted); }
+  .chip::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 5px; vertical-align: 1px;
+                  border: 1px solid currentColor; border-radius: 50%; }
+  .chip.ok { color: var(--green); }
+  .chip.ok::before { background: currentColor; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+  .row > input { flex: 1 1 260px; min-width: 0; }
+  .fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 3px; }
   .msg { font-size: 13px; margin-top: 6px; min-height: 1em; }
-  .next { display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap;
-          margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
-  .next button { padding: 9px 22px; }
-  .field { margin-top: 8px; }
-  .field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 3px; }
-  code { font: 12px ui-monospace, Consolas, monospace; background: var(--line); padding: 1px 5px; border-radius: 5px; }
-  .msg.err { color: var(--bad); }
-  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
-  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .msg.err { color: var(--red); }
+  .next { display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+  .next button { padding: 8px 22px; }
+
+  /* 요약 숫자: 상자 4개 대신 한 줄 장부 칸 (1px 간격이 괘선 역할) */
+  .bar { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--rule);
+          border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink); margin-bottom: 20px; }
+  .kpi { background: var(--paper); padding: 12px 14px 14px; min-width: 0; }
   .kpi .label { color: var(--muted); font-size: 13px; }
-  .kpi .value { font-size: 28px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; }
-  .kpi.hero .value { color: var(--accent); }
-  .notice { background: var(--warn-soft); color: var(--warn); border-radius: 12px; padding: 12px 16px;
-            display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+  .kpi .value { font: 600 30px/1.2 var(--fig); margin-top: 4px; text-align: right; font-variant-numeric: tabular-nums; }
+  .kpi.hero { background: var(--green-soft); }
+  .kpi.hero .value { color: var(--green); }
+
+  .notice { border-left: 3px solid var(--amber); background: var(--amber-soft); color: var(--ink);
+            padding: 10px 14px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
   .notice span { flex: 1 1 260px; }
-  .log { font: 12px/1.5 ui-monospace, Consolas, monospace; color: var(--muted); max-height: 120px; overflow: auto;
-         white-space: pre-wrap; margin-top: 8px; }
-  .section-title { font-size: 19px; margin: 24px 0 12px; }
-  .flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
-  .stage { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; min-width: 0; }
-  .stage:not(:last-child)::after { content: "→"; position: absolute; right: -13px; top: 50%; transform: translateY(-50%);
-                                   color: var(--muted); font-weight: 700; }
-  .stage .s-title { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .stage .s-rate { font-size: 24px; font-weight: 700; margin: 2px 0; font-variant-numeric: tabular-nums; }
-  .stage .s-rate.has { color: var(--accent); }
-  .stage .s-count { font-size: 13px; }
-  .stage .s-extra { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.6; }
-  .stage.missing { opacity: .55; }
-  .groups { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-  .grow { display: grid; grid-template-columns: minmax(80px, 34%) 1fr 92px; gap: 10px; align-items: center;
-          padding: 7px 0; border-top: 1px solid var(--line); }
-  .grow:first-of-type { border-top: 0; }
-  .gname { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .track { height: 10px; background: var(--line); border-radius: 99px; overflow: hidden; }
-  .fill { height: 100%; background: var(--accent); border-radius: 99px; }
-  .gnum { text-align: right; font-variant-numeric: tabular-nums; font-size: 14px; }
-  .gnum b { font-size: 15px; }
-  .gnum small { display: block; color: var(--muted); font-size: 12px; }
-  .empty { color: var(--muted); padding: 24px 0; text-align: center; }
+  .panel { border-left: 3px solid var(--rule-mid); padding: 8px 14px; margin-bottom: 20px; }
+  .log { font: 12px/1.5 var(--fig); color: var(--muted); max-height: 140px; overflow: auto; white-space: pre-wrap; margin-top: 6px; }
+
+  /* 섹션 머리: 굵은 괘선 위 제목 */
+  .section-title { font-size: 16px; margin: 32px 0 4px; padding-bottom: 6px; border-bottom: 1px solid var(--ink); }
+  .section-note { margin: 6px 0 10px; }
+
+  /* 전형별 합격률 표 */
+  .ledger { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .ledger th { font-size: 12px; font-weight: 500; color: var(--muted); text-align: right; padding: 6px 8px;
+               border-bottom: 3px double var(--rule-mid); white-space: nowrap; }
+  .ledger th:first-child, .ledger td:first-child { text-align: left; padding-left: 0; }
+  .ledger td { padding: 9px 8px; border-bottom: 1px solid var(--rule); text-align: right;
+               font-family: var(--fig); font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ledger td.s-name { font-family: inherit; font-size: 14px; font-weight: 600; white-space: normal; }
+  .ledger td.s-name .idx { font: 12px var(--fig); color: var(--muted); margin-right: 8px; font-weight: 400; }
+  .ledger td.s-rate { font-size: 15px; font-weight: 600; width: 132px; }
+  .ledger td.s-rate.has { color: var(--green); }
+  .ledger td.s-note { font-family: inherit; color: var(--muted); text-align: left; white-space: normal; }
+  .ledger .zero { color: var(--muted); opacity: .75; }
+  .ledger tr.missing td { color: var(--muted); }
+  .ledger tr.missing td.s-name { font-weight: 400; }
+  .meter { display: block; height: 3px; background: var(--track); margin-top: 4px; }
+  .meter i { display: block; height: 100%; background: var(--green); }
+
+  /* 기준별 서류 합격률 */
+  .groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 40px; }
+  .book { min-width: 0; }
+  .book h3 { font-size: 14px; margin: 14px 0 0; padding-bottom: 5px; border-bottom: 1px solid var(--rule-mid); }
+  .grow { display: grid; grid-template-columns: minmax(70px, 34%) 1fr 96px; gap: 12px; align-items: center;
+          padding: 7px 0; border-bottom: 1px solid var(--rule); }
+  .gname { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .track { height: 6px; background: var(--track); }
+  .fill { height: 100%; background: var(--green); }
+  .gnum { text-align: right; font: 13px var(--fig); font-variant-numeric: tabular-nums; }
+  .gnum b { font-size: 14px; }
+  .gnum small { display: block; color: var(--muted); font-size: 11px; }
+  .empty { color: var(--muted); padding: 18px 0; font-size: 13px; border-bottom: 1px solid var(--rule); }
+
   @media (max-width: 760px) {
-    .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .stage::after { display: none; }
-    .kpis { grid-template-columns: repeat(2, 1fr); }
-    .groups { grid-template-columns: 1fr; }
+    .fields { grid-template-columns: 1fr; }
+    .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .groups { grid-template-columns: minmax(0, 1fr); }
+  }
+  /* 좁은 화면: 표 한 줄을 '이름 · 합격률' + '세부 건수' 두 줄로 접는다 (가로 스크롤 없음) */
+  @media (max-width: 640px) {
+    .ledger thead { display: none; }
+    .ledger, .ledger tbody { display: block; }
+    .ledger tr { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 14px; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+    .ledger td { border: 0; padding: 0; text-align: left; }
+    .ledger td.s-name { flex: 1 0 calc(100% - 134px); }  /* 이름+합격률이 첫 줄을 채워 건수는 다음 줄로 */
+    .ledger td.s-rate { flex: 0 0 120px; width: auto; text-align: right; }
+    .ledger td.c { font-size: 12px; }
+    .ledger td.c[data-label]::before { content: attr(data-label) " "; font-family: "Pretendard", "Malgun Gothic", sans-serif; color: var(--muted); }
+    .kpi .value { font-size: 24px; }
+    .step { grid-template-columns: 32px 1fr; }
   }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <img src="/icon.png" alt="" width="40" height="40">
+    <img src="/icon.png" alt="" width="34" height="34">
     <h1>apply-and-sort</h1>
     <span class="ver" id="ver"></span>
     <span class="spacer"></span>
-    <button id="toggle-setup">설정</button>
-    <button id="quit">종료</button>
+    <button id="toggle-setup" type="button">설정</button>
+    <button id="quit" type="button">종료</button>
   </header>
 
-  <section class="card" id="setup">
-    <h2>처음 설정 <span class="muted">한 번만 하면 돼요</span></h2>
+  <section id="setup" aria-labelledby="setup-title">
+    <div class="setup-head">
+      <h2 id="setup-title">처음 설정</h2>
+      <span class="muted">한 번만 하면 돼요</span>
+    </div>
     <div class="steps">
       <div class="step" id="step-cred">
-        <div class="num">1</div>
+        <div class="num">01</div>
         <div>
-          <b>Google OAuth 키 등록</b> <span class="chip" id="chip-cred">미등록</span>
+          <div class="step-title">Google OAuth 키 등록 <span class="chip" id="chip-cred">미등록</span></div>
           <div class="muted">Google Cloud Console 에서 만든 '데스크톱 앱' 유형의 credentials.json 파일을 골라 주세요. (README 참고)</div>
-          <div class="row"><input type="file" id="cred-file" accept=".json,application/json"></div>
-          <div class="msg" id="msg-cred"></div>
+          <div class="row"><input type="file" id="cred-file" accept=".json,application/json" aria-label="credentials.json 파일 선택"></div>
+          <div class="msg" id="msg-cred" role="status"></div>
         </div>
       </div>
       <div class="step" id="step-conn">
-        <div class="num">2</div>
+        <div class="num">02</div>
         <div>
-          <b>구글 계정 연결</b> <span class="chip" id="chip-conn">연결 안 됨</span>
+          <div class="step-title">구글 계정 연결 <span class="chip" id="chip-conn">연결 안 됨</span></div>
           <div class="muted">버튼을 누르면 브라우저에서 구글 로그인 창이 열려요. 시트 읽기·쓰기 권한만 요청해요.</div>
           <div class="row">
-            <button class="primary" id="connect">구글 계정 연결</button>
-            <button id="disconnect">연결 해제</button>
-            <a id="login-link" target="_blank" rel="noopener" hidden><button class="primary" type="button">Google 로그인 열기 ↗</button></a>
+            <button class="primary" id="connect" type="button">구글 계정 연결</button>
+            <button id="disconnect" type="button">연결 해제</button>
+            <a id="login-link" class="btn primary" target="_blank" rel="noopener" hidden>Google 로그인 열기 ↗</a>
           </div>
-          <div class="msg" id="msg-conn"></div>
+          <div class="msg" id="msg-conn" role="status"></div>
         </div>
       </div>
       <div class="step" id="step-sheet">
-        <div class="num">3</div>
+        <div class="num">03</div>
         <div>
-          <b>구글 시트 주소</b> <span class="chip" id="chip-sheet">미설정</span>
+          <div class="step-title"><label for="sheet-url">구글 시트 주소</label> <span class="chip" id="chip-sheet">미설정</span></div>
           <div class="muted">지원 기록 시트의 주소 전체를 붙여넣고 [저장]을 누르세요. 1행에 '회사'·'서류' 열이 있는 탭을 알아서 찾아요.</div>
           <div class="row">
             <input type="url" id="sheet-url" placeholder="https://docs.google.com/spreadsheets/d/...">
-            <button class="primary" id="save-sheet">저장</button>
+            <button class="primary" id="save-sheet" type="button">저장</button>
           </div>
-          <div class="msg" id="msg-sheet"></div>
+          <div class="msg" id="msg-sheet" role="status"></div>
         </div>
       </div>
       <div class="step" id="step-llm">
-        <div class="num">4</div>
+        <div class="num">04</div>
         <div>
-          <b>AI 연결</b> <span class="chip" id="chip-llm">미설정</span>
+          <div class="step-title">AI 연결 <span class="chip" id="chip-llm">미설정</span></div>
           <div class="muted">처음 보는 회사의 기업규모를 AI가 찾아 채워요. OpenAI 호환(Chat Completions) 형식이면 어디든 연결돼요.
             (예: <code>https://api.openai.com/v1</code>, 통합 키 서비스 freellmapi, 내 PC의 로컬 모델)</div>
-          <div class="field">
-            <label for="llm-url">API 주소 (OpenAI 호환)</label>
-            <input type="text" id="llm-url" placeholder="예: https://api.openai.com/v1" autocomplete="off" spellcheck="false">
-          </div>
-          <div class="field">
-            <label for="llm-model">모델 이름</label>
-            <input type="text" id="llm-model" placeholder="예: gpt-4o-mini" autocomplete="off" spellcheck="false">
-          </div>
-          <div class="field">
-            <label for="llm-key">API 키 <span class="muted" id="llm-key-hint"></span></label>
-            <input type="password" id="llm-key" placeholder="본인 API 키" autocomplete="off" spellcheck="false">
+          <div class="fields">
+            <div class="field">
+              <label for="llm-url">API 주소 (OpenAI 호환)</label>
+              <input type="text" id="llm-url" placeholder="예: https://api.openai.com/v1" autocomplete="off" spellcheck="false">
+            </div>
+            <div class="field">
+              <label for="llm-model">모델 이름</label>
+              <input type="text" id="llm-model" placeholder="예: gpt-4o-mini" autocomplete="off" spellcheck="false">
+            </div>
+            <div class="field">
+              <label for="llm-key">API 키 <span id="llm-key-hint"></span></label>
+              <input type="password" id="llm-key" placeholder="본인 API 키" autocomplete="off" spellcheck="false">
+            </div>
           </div>
           <div class="row">
-            <button class="primary" id="save-llm">저장하기</button>
+            <button class="primary" id="save-llm" type="button">저장하기</button>
             <button id="test-llm" type="button">연결 테스트</button>
           </div>
-          <div class="muted">AI에게는 회사명과 지원 직무만 보내요. 입력한 AI 서비스의 데이터 보관·학습 정책을 꼭 확인하세요.</div>
-          <div class="msg" id="msg-llm"></div>
+          <div class="muted" style="margin-top:8px">AI에게는 회사명과 지원 직무만 보내요. 입력한 AI 서비스의 데이터 보관·학습 정책을 꼭 확인하세요.</div>
+          <div class="msg" id="msg-llm" role="status"></div>
         </div>
       </div>
     </div>
     <div class="next">
-      <span class="muted" id="next-hint"></span>
-      <button class="primary" id="go-dash" disabled>다음 →</button>
+      <span class="muted" id="next-hint" role="status"></span>
+      <button class="primary" id="go-dash" type="button" disabled>다음 →</button>
     </div>
   </section>
 
   <main id="dash" hidden>
-    <div class="row" style="justify-content:space-between;margin:0 0 12px">
+    <div class="bar">
       <div><b id="sheet-title"></b> <span class="muted" id="updated"></span></div>
-      <button id="refresh">새로고침</button>
+      <button id="refresh" type="button">새로고침</button>
     </div>
     <div class="kpis">
       <div class="kpi"><div class="label">지원</div><div class="value" id="k-applied">-</div></div>
@@ -188,23 +248,30 @@
       <div class="kpi"><div class="label">서류 합격</div><div class="value" id="k-passed">-</div></div>
       <div class="kpi hero"><div class="label">서류 합격률</div><div class="value" id="k-rate">-</div></div>
     </div>
-    <div class="notice" id="notice" hidden>
+    <div class="notice" id="notice" role="status" hidden>
       <span id="notice-text"></span>
-      <button class="primary" id="classify">기업규모 자동 채우기</button>
+      <button class="primary" id="classify" type="button">기업규모 자동 채우기</button>
     </div>
-    <div class="card" id="job" hidden>
+    <div class="panel" id="job" hidden>
       <b>기업규모 채우는 중</b>
-      <div class="msg" id="job-result"></div>
+      <div class="msg" id="job-result" role="status"></div>
       <div class="log" id="job-log"></div>
     </div>
-    <h2 class="section-title">🧭 전형별 합격률</h2>
-    <div class="muted" style="margin:-6px 0 12px">각 전형에서 결과가 나온 건(합격+불합격) 중 합격한 비율이에요. 대기·포기·해당없음·미진행은 합격률에서 빼요.</div>
-    <div class="flow" id="flow"></div>
 
-    <h2 class="section-title">💡 내 서류합격률 분석</h2>
+    <h2 class="section-title">전형별 합격률</h2>
+    <div class="muted section-note">각 전형에서 결과가 나온 건(합격+불합격) 중 합격한 비율이에요. 대기·포기·해당없음·미진행은 합격률에서 빼요.</div>
+    <table class="ledger">
+      <thead>
+        <tr><th scope="col">전형</th><th scope="col">합격률</th><th scope="col">합격 / 확정</th>
+            <th scope="col">대기</th><th scope="col">포기</th><th scope="col">해당없음</th><th scope="col">미진행</th></tr>
+      </thead>
+      <tbody id="flow"></tbody>
+    </table>
+
+    <h2 class="section-title">내 서류합격률 분석</h2>
     <div class="groups" id="groups"></div>
   </main>
-  <div class="msg err" id="msg-dash"></div>
+  <div class="msg err" id="msg-dash" role="alert"></div>
 </div>
 
 <script>
@@ -269,7 +336,7 @@ function renderStatus(s) {
   $("step-llm").classList.toggle("done", !!llm.ready);
   const missing = missingSteps(s);
   $("go-dash").disabled = missing.length > 0;
-  $("next-hint").textContent = missing.length ? `남은 단계: ${missing.join(", ")}` : "모든 설정이 끝났어요!";
+  $("next-hint").textContent = missing.length ? `남은 단계: ${missing.join(", ")}` : "모든 설정이 끝났어요.";
   $("toggle-setup").hidden = missing.length > 0;  // 설정이 끝나기 전에는 대시보드로 숨길 곳이 없음
   $("connect").disabled = !s.credentials || s.oauth.running;
   $("login-link").hidden = !s.oauth.auth_url;
@@ -308,8 +375,8 @@ function renderSummary(d) {
   box.replaceChildren();
   for (const g of d.groups) {
     const card = document.createElement("section");
-    card.className = "card";
-    const h = document.createElement("h2");
+    card.className = "book";
+    const h = document.createElement("h3");
     h.textContent = g.title;
     card.append(h);
     if (!g.rows.length) {
@@ -349,22 +416,47 @@ function renderSummary(d) {
 function renderStages(stages) {
   const flow = $("flow");
   flow.replaceChildren();
-  const div = (cls, text) => { const el = document.createElement("div"); el.className = cls; el.textContent = text; return el; };
-  for (const s of stages) {
-    const card = div("stage" + (s.column_missing ? " missing" : ""), "");
-    card.append(div("s-title", s.title));
-    card.title = s.title;
+  const td = (cls, text, label) => {
+    const el = document.createElement("td");
+    el.className = cls;
+    el.textContent = text;
+    if (label) el.dataset.label = label;  // 좁은 화면에서 표 머리 대신 붙는 이름
+    return el;
+  };
+  stages.forEach((s, i) => {
+    const tr = document.createElement("tr");
+    if (s.column_missing) tr.className = "missing";
+    const name = td("s-name", s.title);
+    const idx = document.createElement("span");
+    idx.className = "idx";
+    idx.textContent = String(i + 1).padStart(2, "0");
+    name.prepend(idx);
+    tr.append(name);
     if (s.column_missing) {
-      card.append(div("s-rate", "-"), div("s-count", "시트에 열 없음"));
+      tr.append(td("s-rate", "-"));
+      const note = td("c s-note", "시트에 열 없음");
+      note.colSpan = 5;
+      tr.append(note);
     } else {
-      card.append(div("s-rate" + (s.rate == null ? "" : " has"), pct(s.rate)));
-      card.append(div("s-count", s.decided ? `합격 ${s.passed} / 확정 ${s.decided}` : "아직 확정된 결과 없음"));
-      const extra = [["pending", "대기"], ["dropped", "포기"], ["skipped", "해당없음"], ["not_reached", "미진행"]]
-        .filter(([k]) => s[k]).map(([k, label]) => `${label} ${s[k]}`);
-      card.append(div("s-extra", extra.join(" · ") || " "));
+      const rate = td("s-rate" + (s.rate ? " has" : ""), pct(s.rate));  // 0%는 강조하지 않음
+      if (s.rate != null) {
+        const meter = document.createElement("span");
+        meter.className = "meter";
+        const bar = document.createElement("i");
+        bar.style.width = Math.max(s.rate * 100, 1) + "%";
+        meter.append(bar);
+        rate.append(meter);
+      }
+      tr.append(rate);
+      tr.append(s.decided
+        ? td("c", `${s.passed} / ${s.decided}`, "합격/확정")
+        : td("c s-note", "아직 확정된 결과 없음"));
+      for (const [k, label] of [["pending", "대기"], ["dropped", "포기"], ["skipped", "해당없음"], ["not_reached", "미진행"]]) {
+        tr.append(td("c" + (s[k] ? "" : " zero"), String(s[k] || 0), label));
+      }
     }
-    flow.append(card);
-  }
+    flow.append(tr);
+  });
 }
 
 async function refreshSummary() {
