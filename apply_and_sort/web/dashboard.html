@@ -433,6 +433,7 @@ function renderSummary(d) {
   $("notice-text").textContent = `기업규모가 비어 있는 행이 ${d.unclassified}개 있어요. 버튼을 누르면 AI가 찾아 채워요.`;
 
   renderStages(d.stages || []);
+  renderMonths(d.monthly || { months: [], undated: 0 });
 
   const box = $("groups");
   box.replaceChildren();
@@ -520,6 +521,40 @@ function renderStages(stages) {
     }
     flow.append(tr);
   });
+}
+
+// 월별 기록 보기: 달마다 <details> 하나 (키보드 Enter/Space 로도 열고 닫힘)
+function renderMonths(m) {
+  const box = $("months");
+  box.replaceChildren();
+  const el = (tag, cls, text) => {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  };
+  if (!m.months.length) {
+    box.append(el("div", "empty", "지원일이 적힌 기록이 없어요. 시트의 '지원일' 열에 26-11-01처럼 적으면 달별로 묶어 보여 줘요."));
+  }
+  for (const r of m.months) {
+    const det = el("details", "month");
+    det.dataset.key = r.key;
+    const doc = r.document;
+    const sum = el("summary");
+    const arrow = el("span", "m-arrow");
+    arrow.setAttribute("aria-hidden", "true");
+    sum.append(
+      el("span", "m-label", `[${r.label}]`),
+      el("span", "m-meta", `지원 ${r.applied} · 서류 합격률 ${pct(doc.rate)}` + (r.interviews ? ` · 면접 ${r.interviews}` : "")),
+      arrow,
+    );
+
+    const body = el("div", "m-body");
+    det.append(sum, body);
+    box.append(det);
+  }
+  $("months-undated").hidden = !m.undated;
+  $("months-undated").textContent = `지원일이 없거나 읽을 수 없는 기록 ${m.undated}건은 월별 목록에서 빠졌어요.`;
 }
 
 async function refreshSummary() {
