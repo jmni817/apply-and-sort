@@ -128,3 +128,11 @@ def test_summary_reads_data_sheet(sample_values, config):
     tracker, _ = make_tracker(sample_values, config)
 
     assert tracker.summary()["overall"]["passed"] == 1
+
+
+def test_summary_includes_monthly_reports(sample_values, config):
+    tracker, _ = make_tracker(sample_values, config)
+    monthly = tracker.summary()["monthly"]
+
+    assert [m["label"] for m in monthly["months"]] == ["26년 11월", "26년 10월"]
+    assert monthly["months"][1]["applied"] == 3 and monthly["undated"] == 0
