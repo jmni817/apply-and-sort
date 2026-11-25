@@ -552,6 +552,22 @@ function renderMonths(m) {
     );
 
     const body = el("div", "m-body");
+    // 월간 요약
+    const kpis = el("div", "m-kpis");
+    const kpi = (label, value, small) => {
+      const cell = el("div");
+      const v = el("div", "value", value);
+      if (small) v.append(el("small", null, small));
+      cell.append(el("div", "label", label), v);
+      return cell;
+    };
+    kpis.append(
+      kpi("지원", String(r.applied)),
+      kpi("서류 합격률", pct(doc.rate), `${doc.passed}/${doc.decided}`),
+      kpi("면접 진행", String(r.interviews)),
+      kpi("최종 합격", String(r.final_passed)),
+    );
+    body.append(kpis);
     det.append(sum, body);
     box.append(det);
   }
