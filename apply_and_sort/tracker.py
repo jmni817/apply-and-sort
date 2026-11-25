@@ -11,6 +11,7 @@ from typing import Any, Callable
 from .company import AIError, CompanyClassifier, CompanyInfo
 from .records import Application, SheetFormatError, header_index, normalize_company, parse_applications
 from .sheets_client import SheetsClient
+from .monthly import monthly_reports
 from .stats import summarize
 
 log = logging.getLogger(__name__)
@@ -65,7 +66,11 @@ class Tracker:
         return parse_applications(self.sheets.read_values(self.data_sheet()), self.columns, self.config.get("stage_values"))
 
     def summary(self) -> dict:
-        return summarize(self.load(), self.columns)
+        apps = self.load()
+        result = summarize(apps, self.columns)
+        # 월별 기록 보기: 지원일 기준 달별 리포트 (기존 집계와 같은 기록을 한 번만 읽어 쓴다)
+        result["monthly"] = monthly_reports(apps, self.columns, result["overall"]["rate"])
+        return result
 
     def read_cache(self) -> dict[str, CompanyInfo]:
         """기업정보 시트의 {정규화한 회사명: 정보}. 같은 회사가 여러 번 있으면 아래 행이 우선."""
