@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
+from datetime import date
 from enum import Enum
 from typing import Any
 
@@ -72,6 +74,23 @@ def resolve_stages(raw: list[StageStatus | None]) -> list[StageStatus]:
     return resolved
 
 
+_DATE_RE = re.compile(r"^\s*(\d{4}|\d{2})\s*[-./년]\s*(\d{1,2})\s*[-./월]\s*(\d{1,2})")
+
+
+def parse_date(value: str) -> date | None:
+    """지원일 칸을 날짜로. 26-11-01, 2026-11-01, 2026.11.01, 2026. 11. 1., 26년 11월 1일 등을 읽고, 아니면 None."""
+    match = _DATE_RE.match(str(value or ""))
+    if not match:
+        return None
+    year, month, day = (int(part) for part in match.groups())
+    if year < 100:
+        year += 2000
+    try:
+        return date(year, month, day)
+    except ValueError:  # 2026-13-40 같은 잘못된 날짜
+        return None
+
+
 class SheetFormatError(Exception):
     """데이터 시트에 꼭 필요한 열이 없음."""
 
@@ -86,6 +105,9 @@ class Application:
     document: str = ""  # 서류 결과
     size: str = ""  # 기업규모
     stages: dict[str, StageStatus] = field(default_factory=dict)  # 전형별 상태 (STAGE_KEYS 순서)
+    applied_raw: str = ""  # 지원일 칸에 적힌 그대로
+    applied: date | None = None  # 읽을 수 있는 날짜일 때만
+    note: str = ""  # 비고
 
     @property
     def is_intern(self) -> bool:
@@ -141,6 +163,9 @@ def parse_applications(
                 document=cell(row, "document"),
                 size=cell(row, "size"),
                 stages=dict(zip(stage_keys, resolve_stages(raw))),
+                applied_raw=cell(row, "applied_at"),
+                applied=parse_date(cell(row, "applied_at")),
+                note=cell(row, "note"),
             )
         )
     return apps
