@@ -202,6 +202,16 @@
     .ledger td.c[data-label]::before { content: attr(data-label) " "; font-family: "Pretendard", "Malgun Gothic", sans-serif; color: var(--muted); }
     .kpi .value { font-size: 24px; }
     .step { grid-template-columns: 32px 1fr; }
+    .m-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .mtable thead { display: none; }
+    .mtable, .mtable tbody { display: block; }
+    .mtable tr { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 8px 0; border-bottom: 1px solid var(--rule); }
+    .mtable td { border: 0; padding: 0; }
+    .mtable td.m-co { flex: 1 0 60%; }  /* 회사 + 현재 단계가 첫 줄, 직무·지원일은 다음 줄 */
+    .mtable td.m-stage { order: 2; }
+    .mtable td.m-role, .mtable td.m-date { order: 3; font-size: 12px; color: var(--muted); }
+    .mtable td.m-role { flex: 1 0 60%; }
+    .m-notes div { grid-template-columns: 1fr; gap: 2px; }
   }
 
   /* 새 버전 안내 팝업 */
