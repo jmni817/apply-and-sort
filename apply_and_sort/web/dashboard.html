@@ -589,6 +589,25 @@ function renderMonths(m) {
     }
     table.append(head, tb);
     body.append(table);
+    // 월간 회고
+    body.append(el("h3", null, "월간 회고"));
+    if (r.insights.length) {
+      const ul = el("ul", "m-insights");
+      for (const line of r.insights) ul.append(el("li", null, line));
+      body.append(ul);
+    }
+    if (r.notes.length) {
+      body.append(el("div", "m-sub", "비고에 적은 메모"));
+      const dl = el("dl", "m-notes");
+      for (const n of r.notes) {
+        const row = el("div");
+        row.append(el("dt", null, n.company), el("dd", null, n.note));
+        dl.append(row);
+      }
+      body.append(dl);
+    } else {
+      body.append(el("div", "muted", "이 달에 적은 비고가 없어요."));
+    }
     det.append(sum, body);
     box.append(det);
   }
