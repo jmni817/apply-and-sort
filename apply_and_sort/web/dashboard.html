@@ -526,6 +526,7 @@ function renderStages(stages) {
 // 월별 기록 보기: 달마다 <details> 하나 (키보드 Enter/Space 로도 열고 닫힘)
 function renderMonths(m) {
   const box = $("months");
+  const wasOpen = new Set([...box.querySelectorAll("details[open]")].map((d) => d.dataset.key));  // 새로고침해도 연 달은 그대로
   box.replaceChildren();
   const el = (tag, cls, text) => {
     const e = document.createElement(tag);
@@ -539,6 +540,7 @@ function renderMonths(m) {
   for (const r of m.months) {
     const det = el("details", "month");
     det.dataset.key = r.key;
+    det.open = wasOpen.has(r.key);
     const doc = r.document;
     const sum = el("summary");
     const arrow = el("span", "m-arrow");
