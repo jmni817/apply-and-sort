@@ -568,6 +568,27 @@ function renderMonths(m) {
       kpi("최종 합격", String(r.final_passed)),
     );
     body.append(kpis);
+    // 지원 현황
+    body.append(el("h3", null, "지원 현황"));
+    const table = el("table", "mtable");
+    const head = el("thead");
+    const hr = el("tr");
+    for (const t of ["회사", "직무", "지원일", "현재 단계"]) {
+      const th = el("th", null, t);
+      th.scope = "col";
+      hr.append(th);
+    }
+    head.append(hr);
+    const tb = el("tbody");
+    for (const a of r.apps) {
+      const tr = el("tr");
+      const stage = el("td", "m-stage");
+      stage.append(el("span", "badge " + a.kind, a.stage));
+      tr.append(el("td", "m-co", a.company), el("td", "m-role", a.role || "-"), el("td", "m-date", a.applied), stage);
+      tb.append(tr);
+    }
+    table.append(head, tb);
+    body.append(table);
     det.append(sum, body);
     box.append(det);
   }
