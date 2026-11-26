@@ -166,6 +166,7 @@
   .mtable th { font-size: 12px; font-weight: 500; color: var(--muted); text-align: left; padding: 5px 8px 5px 0;
                border-bottom: 1px solid var(--rule-mid); }
   .mtable td { padding: 7px 8px 7px 0; border-bottom: 1px solid var(--rule); vertical-align: baseline; }
+  .mtable td.m-ch { color: var(--muted); white-space: nowrap; }
   .mtable td.m-co { font-weight: 600; }
   .mtable td.m-date { font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
   .mtable td.m-stage { white-space: nowrap; }
@@ -207,7 +208,8 @@
     .mtable, .mtable tbody { display: block; }
     .mtable tr { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 8px 0; border-bottom: 1px solid var(--rule); }
     .mtable td { border: 0; padding: 0; }
-    .mtable td.m-co { flex: 1 0 60%; }  /* 회사 + 현재 단계가 첫 줄, 직무·지원일은 다음 줄 */
+    .mtable td.m-co { flex: 1 0 50%; }  /* 지원형태 + 회사 + 현재 단계가 첫 줄, 직무·지원일은 다음 줄 */
+    .mtable td.m-ch { font-size: 12px; }
     .mtable td.m-stage { order: 2; }
     .mtable td.m-role, .mtable td.m-date { order: 3; font-size: 12px; color: var(--muted); }
     .mtable td.m-role { flex: 1 0 60%; }
@@ -632,7 +634,7 @@ function renderMonths(m) {
     const table = el("table", "mtable");
     const head = el("thead");
     const hr = el("tr");
-    for (const t of ["회사", "직무", "지원일", "현재 단계"]) {
+    for (const t of ["지원형태", "회사", "직무", "지원일", "현재 단계"]) {
       const th = el("th", null, t);
       th.scope = "col";
       hr.append(th);
@@ -643,7 +645,7 @@ function renderMonths(m) {
       const tr = el("tr");
       const stage = el("td", "m-stage");
       stage.append(el("span", "badge " + a.kind, a.stage));
-      tr.append(el("td", "m-co", a.company), el("td", "m-role", a.role || "-"), el("td", "m-date", a.applied), stage);
+      tr.append(el("td", "m-ch", a.channel || "-"), el("td", "m-co", a.company), el("td", "m-role", a.role || "-"), el("td", "m-date", a.applied), stage);
       tb.append(tr);
     }
     table.append(head, tb);
