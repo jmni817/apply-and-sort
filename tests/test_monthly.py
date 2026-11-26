@@ -24,6 +24,7 @@ def test_groups_by_month_newest_first_and_skips_empty_months(config):
 
     assert [m["label"] for m in result["months"]] == ["26년 11월", "26년 9월"]  # 10월은 기록이 없어 빠짐
     assert [a["company"] for a in result["months"][0]["apps"]] == ["라마바", "에이비씨"]  # 최근 지원이 위로
+    assert [a["channel"] for a in result["months"][0]["apps"]] == ["일반", "간편"]  # 지원형태도 함께
 
 
 def test_rows_without_readable_date_are_counted_as_undated(config):

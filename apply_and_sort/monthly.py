@@ -64,6 +64,7 @@ class MonthReport:
             label, kind = current_stage(app, titles)
             rows.append(
                 {
+                    "channel": app.channel,
                     "company": app.company,
                     "role": app.role,
                     "applied": app.applied_raw or app.applied.isoformat(),
