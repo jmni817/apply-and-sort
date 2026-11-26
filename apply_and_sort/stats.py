@@ -40,11 +40,18 @@ class StageStat:
         return self.decided + self.pending + self.dropped
 
     @property
+    def base(self) -> int:
+        """합격률 분모. 서류는 전체 지원, 그 뒤 전형은 합격+불합격+진행중(대기)."""
+        if self.key == "document":
+            return self.passed + self.failed + self.pending + self.dropped + self.skipped + self.not_reached
+        return self.decided + self.pending
+
+    @property
     def rate(self) -> float | None:
-        return self.passed / self.decided if self.decided else None
+        return self.passed / self.base if self.base else None
 
     def to_dict(self) -> dict:
-        return {**asdict(self), "decided": self.decided, "reached": self.reached, "rate": self.rate}
+        return {**asdict(self), "decided": self.decided, "reached": self.reached, "base": self.base, "rate": self.rate}
 
 
 _STAGE_FIELD = {
@@ -58,7 +65,7 @@ _STAGE_FIELD = {
 
 
 def stage_stats(apps: Iterable[Application], columns: dict[str, str] | None = None) -> list[StageStat]:
-    """전형별 합격/불합격/대기/포기/해당없음/미진행 수와 합격률 (합격 ÷ (합격+불합격))."""
+    """전형별 합격/불합격/대기/포기/해당없음/미진행 수와 합격률 (서류: 합격 ÷ 전체 지원, 그 뒤: 합격 ÷ (합격+불합격+진행중))."""
     apps = list(apps)
     titles = {**DEFAULT_STAGE_TITLES, **{k: v for k, v in (columns or {}).items() if k in STAGE_KEYS}}
     result = []
@@ -156,7 +163,7 @@ def format_summary(summary: dict) -> str:
     o = summary["overall"]
     lines = [f"전체: 지원 {o['applied']}건 · 결과 {o['decided']}건 · 서류 합격 {o['passed']}건 ({pct(o['rate'])})", ""]
     if summary.get("stages"):
-        lines.append("[전형별 합격률]  합격/확정  합격률  (대기·포기·해당없음·미진행)")
+        lines.append("[전형별 합격률]  합격/지원  합격률  (대기·포기·해당없음·미진행)")
         width = max(_width(s["title"]) for s in summary["stages"])
         for s in summary["stages"]:
             title = s["title"] + " " * (width - _width(s["title"]))
@@ -166,7 +173,7 @@ def format_summary(summary: dict) -> str:
             extra = [f"{label} {s[k]}" for k, label in
                      (("pending", "대기"), ("dropped", "포기"), ("skipped", "해당없음"), ("not_reached", "미진행")) if s[k]]
             lines.append(
-                f"  {title}  {s['passed']:>3}/{s['decided']:<3}  {pct(s['rate']):>6}"
+                f"  {title}  {s['passed']:>3}/{s['base']:<3}  {pct(s['rate']):>6}"
                 + (f"  ({' · '.join(extra)})" if extra else "")
             )
         lines.append("")

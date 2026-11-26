@@ -73,18 +73,18 @@ def test_stage_stats_counts_each_bucket(config):
 
     doc = stats["document"]
     assert (doc.passed, doc.failed, doc.not_reached) == (4, 1, 1)
-    assert doc.rate == 0.8
+    assert doc.base == 6 and doc.rate == 4 / 6  # 서류는 전체 지원(빈칸 포함) 중 합격
 
     apt = stats["aptitude"]
     assert (apt.passed, apt.pending, apt.skipped, apt.not_reached) == (1, 1, 2, 2)
-    assert apt.decided == 1 and apt.rate == 1.0
+    assert apt.base == 2 and apt.rate == 0.5  # 합격+불합격+진행중
 
     i1 = stats["interview1"]
     assert (i1.passed, i1.failed, i1.pending, i1.dropped, i1.not_reached) == (0, 1, 1, 1, 3)
-    assert i1.rate == 0.0 and i1.reached == 3
+    assert i1.base == 2 and i1.rate == 0.0 and i1.reached == 3  # 포기는 분모에서 뺌
 
     final = stats["final"]
-    assert final.decided == 0 and final.rate is None  # 확정 0건이면 None
+    assert final.base == 0 and final.rate is None  # 분모 0건이면 None
     assert final.not_reached == 6
 
 
