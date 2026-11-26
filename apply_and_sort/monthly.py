@@ -56,7 +56,7 @@ class MonthReport:
         apps = sorted(self.apps, key=lambda a: (a.applied, a.row), reverse=True)  # 최근 지원이 위로
         decided = sum(1 for a in apps if a.document_decided)
         passed = sum(1 for a in apps if a.document_passed)
-        rate = passed / decided if decided else None
+        rate = passed / len(apps) if apps else None  # 서류 합격률 = 합격 ÷ 전체 지원
         interviews = sum(1 for a in apps for k in INTERVIEW_KEYS if a.stages.get(k) in (StageStatus.PASS, StageStatus.FAIL, StageStatus.PENDING))
         final_passed = sum(1 for a in apps if a.stages.get("final") == StageStatus.PASS)
         rows = []
@@ -93,8 +93,8 @@ def _insights(apps: list[Application], decided: int, passed: int, rate: float | 
     """그 달 기록에서 바로 읽을 수 있는 사실만 짧게. (추측·AI 없음)"""
     lines = []
     if rate is not None:
-        line = f"서류 결과가 나온 {decided}건 중 {passed}건 합격했어요 ({_pct(rate)})."
-        if overall is not None and decided >= 3:
+        line = f"{len(apps)}곳에 지원해 {passed}곳 서류 합격했어요 ({_pct(rate)})."
+        if overall is not None and len(apps) >= 3:
             if abs(rate - overall) < 0.005:
                 line += f" 전체 평균({_pct(overall)})과 같아요."
             else:

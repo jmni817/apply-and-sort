@@ -45,14 +45,15 @@ def test_group_stats_counts_waiting_separately(sample_values, config):
     stats = {s.name: s for s in group_stats(apps, lambda a: a.channel)}
 
     assert (stats["간편"].applied, stats["간편"].decided, stats["간편"].passed, stats["간편"].waiting) == (2, 1, 1, 1)
-    assert stats["간편"].rate == 1.0
+    assert stats["간편"].rate == 0.5  # 서류 합격률 = 합격 ÷ 전체 지원 (대기 포함)
     assert stats["일반"].rate == 0.0
 
 
-def test_group_stats_rate_is_none_without_results(config):
+def test_group_stats_rate_counts_waiting_in_denominator(config):
     apps = parse_applications([["회사", "서류"], ["가나다랩", ""]], config["columns"])
 
-    assert group_stats(apps, lambda a: "전체")[0].rate is None
+    stat = group_stats(apps, lambda a: "전체")[0]
+    assert (stat.applied, stat.waiting, stat.rate) == (1, 1, 0.0)
 
 
 def test_group_stats_follows_given_order():

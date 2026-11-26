@@ -49,7 +49,7 @@ def test_monthly_summary_numbers(config):
     m = reports(rows, config)["months"][0]
 
     assert m["applied"] == 5
-    assert m["document"] == {"decided": 4, "passed": 3, "waiting": 1, "rate": 0.75}
+    assert m["document"] == {"decided": 4, "passed": 3, "waiting": 1, "rate": 0.6}  # 합격 ÷ 전체 지원
     assert m["interviews"] == 5  # 가(1·2차) + 나(1차) + 마(1·2차)
     assert m["final_passed"] == 1
 
@@ -86,7 +86,7 @@ def test_notes_and_insights(config):
 
     assert m["notes"] == [{"company": "다", "note": "피드백: 경험 부족"}, {"company": "가", "note": "면접 12/2"}]
     assert m["insights"] == [
-        "서류 결과가 나온 3건 중 1건 합격했어요 (33.3%). 전체 평균(50.0%)보다 낮아요.",
+        "4곳에 지원해 1곳 서류 합격했어요 (25.0%). 전체 평균(50.0%)보다 낮아요.",
         "서류 결과를 기다리는 곳이 1곳 있어요.",
         "면접까지 간 곳: 가",
         "'간편' 지원이 3건으로 가장 많았어요.",
@@ -100,7 +100,7 @@ def test_insights_skip_tie_and_small_sample(config):
     ]
     m = reports(rows, config, overall=0.2)["months"][0]
 
-    assert m["insights"] == ["서류 결과가 나온 2건 중 1건 합격했어요 (50.0%)."]  # 3건 미만은 평균 비교 안 함, 동점은 1위 없음
+    assert m["insights"] == ["2곳에 지원해 1곳 서류 합격했어요 (50.0%)."]  # 3건 미만은 평균 비교 안 함, 동점은 1위 없음
 
 
 def test_no_apps_gives_empty_list(config):

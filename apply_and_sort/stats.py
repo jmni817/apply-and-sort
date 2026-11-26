@@ -89,7 +89,8 @@ class GroupStat:
 
     @property
     def rate(self) -> float | None:
-        return self.passed / self.decided if self.decided else None
+        """서류 합격률 = 서류 합격 ÷ 전체 지원 (결과 대기도 분모에 들어감)."""
+        return self.passed / self.applied if self.applied else None
 
     def to_dict(self) -> dict:
         return {**asdict(self), "rate": self.rate}
@@ -184,7 +185,7 @@ def format_summary(summary: dict) -> str:
         for r in group["rows"]:
             name = r["name"] + " " * (width - _width(r["name"]))
             lines.append(
-                f"  {name}  {r['passed']:>3}/{r['decided']:<3}  {pct(r['rate']):>6}"
+                f"  {name}  {r['passed']:>3}/{r['applied']:<3}  {pct(r['rate']):>6}"
                 + (f"  (대기 {r['waiting']})" if r["waiting"] else "")
             )
         lines.append("")
