@@ -344,16 +344,17 @@
     </div>
 
     <h2 class="section-title">전형별 합격률</h2>
-    <div class="muted section-note">각 전형에서 결과가 나온 건(합격+불합격) 중 합격한 비율이에요. 대기·포기·해당없음·미진행은 합격률에서 빼요.</div>
+    <div class="muted section-note">서류는 전체 지원 중 합격한 비율이에요. 그 뒤 전형은 그 전형에 들어가 결과가 났거나 진행 중인 건(합격+불합격+대기) 중 합격한 비율이고, 포기·해당없음·미진행은 빼요.</div>
     <table class="ledger">
       <thead>
-        <tr><th scope="col">전형</th><th scope="col">합격률</th><th scope="col">합격 / 확정</th>
+        <tr><th scope="col">전형</th><th scope="col">합격률</th><th scope="col">합격 / 지원</th>
             <th scope="col">대기</th><th scope="col">포기</th><th scope="col">해당없음</th><th scope="col">미진행</th></tr>
       </thead>
       <tbody id="flow"></tbody>
     </table>
 
     <h2 class="section-title">내 서류합격률 분석</h2>
+    <div class="muted section-note">서류 합격률은 지원한 건 전체(결과 대기 포함) 중 서류에 합격한 비율이에요.</div>
     <div class="groups" id="groups"></div>
 
     <h2 class="section-title">월별 기록 보기</h2>
@@ -528,7 +529,7 @@ function renderSummary(d) {
       const b = document.createElement("b");
       b.textContent = pct(r.rate);
       const small = document.createElement("small");
-      small.textContent = `${r.passed}/${r.decided}` + (r.waiting ? ` · 대기 ${r.waiting}` : "");
+      small.textContent = `${r.passed}/${r.applied}` + (r.waiting ? ` · 대기 ${r.waiting}` : "");
       num.append(b, small);
       row.append(name, track, num);
       card.append(row);
@@ -573,9 +574,9 @@ function renderStages(stages) {
         rate.append(meter);
       }
       tr.append(rate);
-      tr.append(s.decided
-        ? td("c", `${s.passed} / ${s.decided}`, "합격/확정")
-        : td("c s-note", "아직 확정된 결과 없음"));
+      tr.append(s.base
+        ? td("c", `${s.passed} / ${s.base}`, "합격/지원")
+        : td("c s-note", "아직 들어간 건 없음"));
       for (const [k, label] of [["pending", "대기"], ["dropped", "포기"], ["skipped", "해당없음"], ["not_reached", "미진행"]]) {
         tr.append(td("c" + (s[k] ? "" : " zero"), String(s[k] || 0), label));
       }
@@ -624,7 +625,7 @@ function renderMonths(m) {
     };
     kpis.append(
       kpi("지원", String(r.applied)),
-      kpi("서류 합격률", pct(doc.rate), `${doc.passed}/${doc.decided}`),
+      kpi("서류 합격률", pct(doc.rate), `${doc.passed}/${r.applied}`),
       kpi("면접 진행", String(r.interviews)),
       kpi("최종 합격", String(r.final_passed)),
     );
